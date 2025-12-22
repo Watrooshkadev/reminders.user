@@ -3,6 +3,8 @@
 // @namespace    pvz_reminders_local
 // @version      2.1
 // @description  Напоминания для сайтов без Google Sheets (SPA, draggable)
+// @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
+// @downloadURL  https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
