@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PVZ Reminders (Local Config, SPA)
 // @namespace    pvz_reminders_local
-// @version      2.1
+// @version      2.2
 // @description  Напоминания для сайтов без Google Sheets (SPA, draggable)
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
 // @downloadURL  https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -22,7 +22,8 @@
 - Одна сторона не более 120см`,
         },
       {
-            match: "https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request",
+            match: "https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request/",
+            requireExtraPath: true,
             title: "Что нельзя отправлять через Яндекс Доставку",
             message: `-Вещества, способные к детонации или взрыву
 -Газы, легко воспламеняющиеся при нормальных условиях
@@ -51,7 +52,9 @@
 -Живые растения и цветы
 -Любые иные предметы, оборот которых запрещен или ограничен на территории Российской Федерации
 -Предметы, которые требуют для перевозки специально оборудованные транспортные средства (имеющие датчики температуры/влажности/кантования/наклона/удара и т.д.)
--Любые медикаменты и медицинские препараты. Биологически активные добавки и лекарственные травы`,
+-Любые медикаменты и медицинские препараты. Биологически активные добавки и лекарственные травы 
+
+`,
         },
       
       
