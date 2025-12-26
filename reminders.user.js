@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      2.3
+// @version      2.4
 // @description  Напоминания для сайтов
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -89,8 +89,7 @@
         right:24px;
         width:360px;
         max-height:75vh;
-        background:rgba(255,255,255,0.5);
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(6px);
         border-radius:16px;
         box-shadow:
             0 10px 25px rgba(0,0,0,0.15),
