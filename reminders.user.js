@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      2.4
+// @version      2.5
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
