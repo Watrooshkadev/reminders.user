@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      2.6
+// @version      2.7
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -284,7 +284,7 @@ let currentURL = location.href;
     avitoValue.textContent = '0';
     const avitoLabel = document.createElement('div');
     avitoLabel.className = 'stat-label';
-    avitoLabel.textContent = 'АВИТО';
+    avitoLabel.textContent = 'АВИТОВЫДАЧА';
         // Статистика для АВИТО
     const avitoStat1 = document.createElement('div');
     avitoStat1.className = 'stat-item';
@@ -343,7 +343,7 @@ let currentURL = location.href;
         if (/^50/.test(command)) {
             return 'АВИТОПРИЕМКА';
         } else {
-            return 'АВИТО';
+            return 'АВИТОВЫДАЧА';
         }
     } else {
         return 'ЯНДЕКС';
@@ -361,7 +361,7 @@ let currentURL = location.href;
 
         commandHistory.forEach(item => {
             const type = item.type || getCommandType(item.command);
-            if (type === 'АВИТО') {
+            if (type === 'АВИТОВЫДАЧА') {
                 stats.avito++;
             } else if (type === 'АВИТОПРИЕМКА') {
                 stats.avito1++;
@@ -443,7 +443,7 @@ let currentURL = location.href;
         fileContent += `Сохранено: ${new Date().toLocaleString()}\n`;
         fileContent += '='.repeat(30) + '\n';
         fileContent += `Всего команд: ${stats.total}\n`;
-        fileContent += `АВИТО: ${stats.avito}\n`;
+        fileContent += `АВИТОВЫДАЧА: ${stats.avito}\n`;
         fileContent += `АВИТОПРИЕМКА: ${stats.avito1}\n`;
         fileContent += `ЯНДЕКС: ${stats.yandex}\n`;
         fileContent += '='.repeat(30) + '\n\n';
@@ -476,7 +476,7 @@ let currentURL = location.href;
         }
 
         const stats = calculateStats();
-        if (confirm(`Очистить всю историю?\nВсего команд: ${stats.total}\nАВИТО: ${stats.avito}\nЯНДЕКС: ${stats.yandex}\nАВИТОПРИЕМКА: ${stats.avito1}`)) {
+        if (confirm(`Очистить всю историю?\nВсего команд: ${stats.total}\АВИТОВЫДАЧА: ${stats.avito}\nЯНДЕКС: ${stats.yandex}\nАВИТОПРИЕМКА: ${stats.avito1}`)) {
             commandHistory = [];
             GM_setValue('commandHistory', commandHistory);
             historyIndex = 0;
@@ -536,7 +536,7 @@ let currentURL = location.href;
         const windowName = 'avitopriem_pvz_deliver_tab';
         const url = 'https://pvz.avito.ru/accept/parcel/'+text;
         const tab = window.open('', windowName);
-        if (tab && !tab.closed) {
+        /*if (tab && !tab.closed) {
             tab.focus();
             try {
                 if (!tab.location.href.includes('https://pvz.avito.ru/accept/parcel/'+text)) {
@@ -544,7 +544,7 @@ let currentURL = location.href;
                 }
             } catch (e) {}
             return tab;
-        }
+        }*/
         return window.open(url, windowName);
     }
 
@@ -552,7 +552,7 @@ let currentURL = location.href;
         const windowName = 'yandex_pvz_deliver_tab';
         const url = 'https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing';
         const tab = window.open('', windowName);
-        if (tab && !tab.closed) {
+       /* if (tab && !tab.closed) {
             tab.focus();
             try {
                 if (!tab.location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing')) {
@@ -560,7 +560,7 @@ let currentURL = location.href;
                 }
             } catch (e) {}
             return tab;
-        }
+        }*/
         return window.open(url, windowName);
     }
 
@@ -603,8 +603,8 @@ let currentURL = location.href;
         copyToClipboard(text);
 
         // Ваша логика обработки команд
-        if (commandType === 'АВИТО') {
-            showStatus(`Команда АВИТО: ${text} (скопировано)`, '#27ae60');
+        if (commandType === 'АВИТОВЫДАЧА') {
+            showStatus(`Команда АВИТОВЫДАЧА: ${text} (скопировано)`, '#27ae60');
             openOrFocusAvitoPvz(text);
         }
         if (commandType === 'АВИТОПРИЕМКА') {
