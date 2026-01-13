@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      2.5
+// @version      2.6
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -285,6 +285,15 @@ let currentURL = location.href;
     const avitoLabel = document.createElement('div');
     avitoLabel.className = 'stat-label';
     avitoLabel.textContent = 'АВИТО';
+        // Статистика для АВИТО
+    const avitoStat1 = document.createElement('div');
+    avitoStat1.className = 'stat-item';
+    const avitoValue1 = document.createElement('div');
+    avitoValue1.className = 'stat-value stat-avito';
+    avitoValue1.textContent = '0';
+    const avitoLabel1 = document.createElement('div');
+    avitoLabel1.className = 'stat-label';
+    avitoLabel1.textContent = 'АВИТОПРИЕМКА';
 
     // Статистика для ЯНДЕКС
     const yandexStat = document.createElement('div');
@@ -299,10 +308,13 @@ let currentURL = location.href;
     // Собираем статистику
     avitoStat.appendChild(avitoValue);
     avitoStat.appendChild(avitoLabel);
+    avitoStat1.appendChild(avitoValue1);
+    avitoStat1.appendChild(avitoLabel1);
     yandexStat.appendChild(yandexValue);
     yandexStat.appendChild(yandexLabel);
 
     statsContainer.appendChild(avitoStat);
+    statsContainer.appendChild(avitoStat1);
     statsContainer.appendChild(yandexStat);
 
     // Область для истории
@@ -325,17 +337,24 @@ let currentURL = location.href;
 
     // Функция для определения типа команды
     function getCommandType(command) {
-        if (/^\d{10}$/.test(command)) {
-            return 'АВИТО';
+    // Проверяем, что строка состоит ровно из 10 цифр
+    if (/^\d{10}$/.test(command)) {
+        // Проверяем, начинается ли с "50"
+        if (/^50/.test(command)) {
+            return 'АВИТОПРИЕМКА';
         } else {
-            return 'ЯНДЕКС';
+            return 'АВИТО';
         }
+    } else {
+        return 'ЯНДЕКС';
     }
+}
 
     // Функция для подсчета статистики
     function calculateStats() {
         const stats = {
             avito: 0,
+            avito1: 0,
             yandex: 0,
             total: commandHistory.length
         };
@@ -344,6 +363,8 @@ let currentURL = location.href;
             const type = item.type || getCommandType(item.command);
             if (type === 'АВИТО') {
                 stats.avito++;
+            } else if (type === 'АВИТОПРИЕМКА') {
+                stats.avito1++;
             } else {
                 stats.yandex++;
             }
@@ -356,6 +377,7 @@ let currentURL = location.href;
     function updateStatsDisplay() {
         const stats = calculateStats();
         avitoValue.textContent = stats.avito;
+        avitoValue1.textContent = stats.avito1;
         yandexValue.textContent = stats.yandex;
     }
 
@@ -422,6 +444,7 @@ let currentURL = location.href;
         fileContent += '='.repeat(30) + '\n';
         fileContent += `Всего команд: ${stats.total}\n`;
         fileContent += `АВИТО: ${stats.avito}\n`;
+        fileContent += `АВИТОПРИЕМКА: ${stats.avito1}\n`;
         fileContent += `ЯНДЕКС: ${stats.yandex}\n`;
         fileContent += '='.repeat(30) + '\n\n';
 
@@ -453,7 +476,7 @@ let currentURL = location.href;
         }
 
         const stats = calculateStats();
-        if (confirm(`Очистить всю историю?\nВсего команд: ${stats.total}\nАВИТО: ${stats.avito}\nЯНДЕКС: ${stats.yandex}`)) {
+        if (confirm(`Очистить всю историю?\nВсего команд: ${stats.total}\nАВИТО: ${stats.avito}\nЯНДЕКС: ${stats.yandex}\nАВИТОПРИЕМКА: ${stats.avito1}`)) {
             commandHistory = [];
             GM_setValue('commandHistory', commandHistory);
             historyIndex = 0;
@@ -493,14 +516,30 @@ let currentURL = location.href;
         }
     }
 
-    function openOrFocusAvitoPvz() {
+    function openOrFocusAvitoPvz(text) {
         const windowName = 'avito_pvz_deliver_tab';
-        const url = 'https://pvz.avito.ru/deliver';
+        const url = 'https://pvz.avito.ru/deliver/scan/'+text+'/'+text;
         const tab = window.open('', windowName);
         if (tab && !tab.closed) {
             tab.focus();
             try {
-                if (!tab.location.href.includes('pvz.avito.ru/deliver')) {
+                if (!tab.location.href.includes('https://pvz.avito.ru/deliver/scan/'+text+'/'+text)) {
+                    tab.location.href = url;
+                }
+            } catch (e) {}
+            return tab;
+        }
+        return window.open(url, windowName);
+    }
+
+        function openOrFocusAvitoPiemk(text) {
+        const windowName = 'avitopriem_pvz_deliver_tab';
+        const url = 'https://pvz.avito.ru/accept/parcel/'+text;
+        const tab = window.open('', windowName);
+        if (tab && !tab.closed) {
+            tab.focus();
+            try {
+                if (!tab.location.href.includes('https://pvz.avito.ru/accept/parcel/'+text)) {
                     tab.location.href = url;
                 }
             } catch (e) {}
@@ -566,7 +605,11 @@ let currentURL = location.href;
         // Ваша логика обработки команд
         if (commandType === 'АВИТО') {
             showStatus(`Команда АВИТО: ${text} (скопировано)`, '#27ae60');
-            openOrFocusAvitoPvz();
+            openOrFocusAvitoPvz(text);
+        }
+        if (commandType === 'АВИТОПРИЕМКА') {
+            showStatus(`Команда АВИТОПРИЕМКА: ${text} (скопировано)`, '#27ae60');
+            openOrFocusAvitoPiemk(text);
         } else {
             showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
             openOrFocusYandexPvz();
