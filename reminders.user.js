@@ -15,223 +15,273 @@
 // ==/UserScript==
 (function() {
     'use strict';
+
+
+
+
 let currentURL = location.href;
     if (location.href.includes('https://www.123.ru/')) {
-    // Стили для окна
     GM_addStyle(`
-        #floatingInputContainer {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 999999;
-            background: white;
-            border: 3px solid #2c3e50;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            width: 850px;
-            height: 700px;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+:root {
+    --bg-main: #ffffff;
+    --bg-soft: #f5f5f7;
+    --bg-hover: #f0f0f3;
 
-        #floatingInputHeader {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #ecf0f1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    --primary: #007aff;
+    --primary-hover: #005dd1;
 
-        #floatingInputTitle {
-            font-weight: bold;
-            color: #2c3e50;
-            font-size: 20px;
-        }
+    --success: #34c759;
+    --danger: #ff3b30;
 
-        .buttons-container {
-            display: flex;
-            gap: 10px;
-        }
+    --text-main: #1d1d1f;
+    --text-muted: #86868b;
+    --border: #d2d2d7;
 
-        .action-button {
-            padding: 8px 15px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
+    --radius: 16px;
+    --radius-sm: 12px;
+}
 
-        .action-button:hover {
-            background: #2980b9;
-        }
+/* Контейнер */
+#floatingInputContainer {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: 880px;
+    height: 720px;
 
-        .action-button.save {
-            background: #27ae60;
-        }
+    background: var(--bg-main);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
 
-        .action-button.save:hover {
-            background: #219653;
-        }
+    box-shadow:
+        0 20px 40px rgba(0,0,0,.08);
 
-        .action-button.clear {
-            background: #e74c3c;
-        }
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-        .action-button.clear:hover {
-            background: #c0392b;
-        }
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                 "SF Pro Display", Inter, system-ui, sans-serif;
+    color: var(--text-main);
+}
 
-        #userInput {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #bdc3c7;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 15px;
-            display: block;
-        }
+/* Header */
+#floatingInputHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-        #userInput:focus {
-            outline: none;
-            border-color: #3498db;
-        }
+    padding: 20px 24px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+}
 
-        #inputStatus {
-            font-size: 14px;
-            color: #666;
-            margin-top: 10px;
-            min-height: 20px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
+#floatingInputTitle {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
 
-        .stats-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 10px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            font-size: 13px;
-        }
+/* Кнопки */
+.buttons-container {
+    display: flex;
+    gap: 10px;
+}
 
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 5px 10px;
-        }
+.action-button {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    cursor: pointer;
 
-        .stat-value {
-            font-weight: bold;
-            font-size: 16px;
-            color: #2c3e50;
-        }
+    font-size: 13px;
+    font-weight: 500;
+    background: white;
+    color: var(--text-main);
 
-        .stat-label {
-            font-size: 11px;
-            color: #7f8c8d;
-            margin-top: 2px;
-        }
+    transition: background .2s, border .2s;
+}
 
-        .stat-avito {
-            color: #e74c3c;
-        }
+.action-button:hover {
+    background: var(--bg-hover);
+}
 
-        .stat-yandex {
-            color: #3498db;
-        }
+.action-button.save {
+    color: var(--success);
+}
 
-        .stat-total {
-            color: #27ae60;
-        }
+.action-button.clear {
+    color: var(--danger);
+}
 
-        .content-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            border: 1px solid #ecf0f1;
-            border-radius: 6px;
-            margin-top: 15px;
-            background: white;
-        }
+/* Основная зона */
+.content-area {
+    flex: 1;
+    margin: 16px;
+    padding: 16px;
 
-        .history-item {
-            padding: 8px;
-            margin-bottom: 5px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border-left: 3px solid #3498db;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
 
-        .history-content {
-            flex: 1;
-        }
+    overflow-y: auto;
+}
 
-        .history-time {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-right: 10px;
-        }
+/* Input */
+#userInput {
+    width: calc(100% - 32px);
+    margin: 0 16px 14px;
+    padding: 14px 16px;
 
-        .history-command {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: white;
 
-        .history-type {
-            font-size: 12px;
-            color: #3498db;
-            margin-left: 10px;
-            padding: 2px 6px;
-            background: #ecf0f1;
-            border-radius: 3px;
-        }
+    font-size: 15px;
+}
 
-        .empty-history {
-            color: #95a5a6;
-            text-align: center;
-            padding: 40px 20px;
-            font-style: italic;
-        }
+#userInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
 
-        .history-actions {
-            display: flex;
-            gap: 5px;
-        }
+/* Статус */
+#inputStatus {
+    margin: 0 16px;
+    padding: 10px 14px;
 
-        .copy-btn {
-            background: none;
-            border: 1px solid #3498db;
-            color: #3498db;
-            padding: 3px 8px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.3s;
-        }
+    background: var(--bg-soft);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
 
-        .copy-btn:hover {
-            background: #3498db;
-            color: white;
-        }
-    `);
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Статистика */
+.stats-container {
+    display: flex;
+    gap: 14px;
+    margin: 16px;
+}
+
+.stat-item {
+    flex: 1;
+    padding: 14px;
+
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.stat-label {
+    font-size: 12px;
+    margin-top: 4px;
+    color: var(--text-muted);
+}
+
+.stat-avito { color: var(--danger); }
+.stat-yandex { color: var(--primary); }
+.stat-total { color: var(--success); }
+
+/* История */
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 10px 12px;
+    margin-bottom: 8px;
+
+    justify-content: space-between;
+
+
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+
+    transition: background .15s;
+}
+
+.history-item:hover {
+    background: var(--bg-hover);
+}
+
+.history-command {
+    font-weight: 500;
+}
+
+.history-time {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.history-type {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+
+    background: var(--bg-soft);
+    color: var(--primary);
+}
+
+/* Кнопка копирования */
+.copy-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--primary);
+    cursor: pointer;
+
+    transition: background .15s;
+}
+
+.copy-btn:hover {
+    background: var(--bg-hover);
+}
+
+/* Пустая история */
+.empty-history {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+/*Кнопка накладная*/
+.invoice-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: #ff9500;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+
+.invoice-btn:hover {
+    background: var(--bg-hover);
+}
+
+`);
+
+
 
     // Загружаем историю из сохраненных данных
     let commandHistory = GM_getValue('commandHistory', []);
+ 
     let historyIndex = commandHistory.length;
 
     // Создаем контейнер для окна ввода
@@ -270,7 +320,7 @@ let currentURL = location.href;
     // Статус
     const status = document.createElement('div');
     status.id = 'inputStatus';
-    status.textContent = 'Введите команду и нажмите Enter';
+    status.textContent = 'Статус ОК';
 
     // Контейнер для статистики
     const statsContainer = document.createElement('div');
@@ -335,20 +385,19 @@ let currentURL = location.href;
 
     document.body.appendChild(container);
 
+      
+
+
     // Функция для определения типа команды
-    function getCommandType(command) {
-    // Проверяем, что строка состоит ровно из 10 цифр
+   function getCommandType(command) {
     if (/^\d{10}$/.test(command)) {
-        // Проверяем, начинается ли с "50"
-        if (/^50/.test(command)) {
-            return 'АВИТОПРИЕМКА';
-        } else {
-            return 'АВИТОВЫДАЧА';
-        }
-    } else {
-        return 'ЯНДЕКС';
+        return command.startsWith('50')
+            ? 'АВИТОПРИЕМКА'
+            : 'АВИТОВЫДАЧА';
     }
+    return 'ЯНДЕКС';
 }
+
 
     // Функция для подсчета статистики
     function calculateStats() {
@@ -402,9 +451,15 @@ let currentURL = location.href;
                         <span class="history-command">${command}</span>
                         <span class="history-type">${type}</span>
                     </div>
-                    <div class="history-actions">
-                        <button class="copy-btn" data-command="${command}">Копировать</button>
-                    </div>
+                   <div class="history-actions">
+    ${type === 'АВИТОПРИЕМК'
+        ? `<button class="invoice-btn" data-command="${command}">Накладная</button>`
+        : ''
+    }
+    <button class="copy-btn" data-command="${command}">Копировать</button>
+</div>
+
+
                 </div>
             `;
         });
@@ -419,6 +474,18 @@ let currentURL = location.href;
                 showStatus(`Скопировано: ${command}`, '#27ae60');
             });
         });
+        // Кнопка "Накладная" (только АВИТОПРИЕМКА)
+contentArea.querySelectorAll('.invoice-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const command = this.getAttribute('data-command');
+
+        const url = `https://pvz.avito.ru/accept/parcel/${command}/waybill`;
+        window.open(url, '_blank');
+
+        showStatus(`Открыта накладная: ${command}`, '#ff9500');
+    });
+});
+
     }
 
     // Функция для отображения статуса
@@ -520,7 +587,7 @@ let currentURL = location.href;
         const windowName = 'avito_pvz_deliver_tab';
         const url = 'https://pvz.avito.ru/deliver/scan/'+text+'/'+text;
         const tab = window.open('', windowName);
-        if (tab && !tab.closed) {
+        /*if (tab && !tab.closed) {
             tab.focus();
             try {
                 if (!tab.location.href.includes('https://pvz.avito.ru/deliver/scan/'+text+'/'+text)) {
@@ -528,7 +595,7 @@ let currentURL = location.href;
                 }
             } catch (e) {}
             return tab;
-        }
+        }*/
         return window.open(url, windowName);
     }
 
@@ -552,7 +619,7 @@ let currentURL = location.href;
         const windowName = 'yandex_pvz_deliver_tab';
         const url = 'https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing';
         const tab = window.open('', windowName);
-       /* if (tab && !tab.closed) {
+        if (tab && !tab.closed) {
             tab.focus();
             try {
                 if (!tab.location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing')) {
@@ -560,9 +627,19 @@ let currentURL = location.href;
                 }
             } catch (e) {}
             return tab;
-        }*/
+        }
         return window.open(url, windowName);
     }
+
+        const RU_TO_EN = {
+    'й':'q','ц':'w','у':'e','к':'r','е':'t','н':'y','г':'u','ш':'i','щ':'o','з':'p','х':'[','ъ':']',
+    'ф':'a','ы':'s','в':'d','а':'f','п':'g','р':'h','о':'j','л':'k','д':'l','ж':';','э':'\'',
+    'я':'z','ч':'x','с':'c','м':'v','и':'b','т':'n','ь':'m','б':',','ю':'.',
+
+    'Й':'Q','Ц':'W','У':'E','К':'R','Е':'T','Н':'Y','Г':'U','Ш':'I','Щ':'O','З':'P','Х':'[','Ъ':']',
+    'Ф':'A','Ы':'S','В':'D','А':'F','П':'G','Р':'H','О':'J','Л':'K','Д':'L','Ж':';','Э':'\'',
+    'Я':'Z','Ч':'X','С':'C','М':'V','И':'B','Т':'N','Ь':'M','Б':',','Ю':'.'
+};
 
     // Функция для обработки ввода
     function processInput() {
@@ -603,17 +680,17 @@ let currentURL = location.href;
         copyToClipboard(text);
 
         // Ваша логика обработки команд
-        if (commandType === 'АВИТОВЫДАЧА') {
-            showStatus(`Команда АВИТОВЫДАЧА: ${text} (скопировано)`, '#27ae60');
-            openOrFocusAvitoPvz(text);
-        }
-        if (commandType === 'АВИТОПРИЕМКА') {
-            showStatus(`Команда АВИТОПРИЕМКА: ${text} (скопировано)`, '#27ae60');
-            openOrFocusAvitoPiemk(text);
-        } else {
-            showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
-            openOrFocusYandexPvz();
-        }
+      if (commandType === 'АВИТОВЫДАЧА') {
+          showStatus(`Команда АВИТОВЫДАЧА: ${text} (скопировано)`, '#27ae60');
+          openOrFocusAvitoPvz(text);
+      } else if (commandType === 'АВИТОПРИЕМКА') {
+          showStatus(`Команда АВИТОПРИЕМКА: ${text} (скопировано)`, '#27ae60');
+          openOrFocusAvitoPiemk(text);
+      } else {
+          showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
+          openOrFocusYandexPvz();
+      }
+
 
         // Очищаем поле ввода
         input.value = '';
@@ -627,6 +704,28 @@ let currentURL = location.href;
             processInput();
         }
     });
+        input.addEventListener('input', () => {
+    const cursorPos = input.selectionStart;
+
+    let converted = '';
+    let changed = false;
+
+    for (const ch of input.value) {
+        if (RU_TO_EN[ch]) {
+            converted += RU_TO_EN[ch];
+            changed = true;
+        } else if (/^[a-zA-Z0-9_-]+$/.test(ch)) {
+            converted += ch;
+        }
+        // всё остальное игнорируем
+    }
+
+    if (changed || converted !== input.value) {
+        input.value = converted;
+        input.setSelectionRange(cursorPos, cursorPos);
+    }
+});
+
 
     input.addEventListener('keydown', function(event) {
         if (event.key === 'ArrowUp') {
@@ -662,32 +761,6 @@ let currentURL = location.href;
         updateHistoryDisplay();
     }, 100);
 
-    // Добавляем возможность перетаскивания окна
-    let isDragging = false;
-    let dragOffset = { x: 0, y: 0 };
-
-    header.addEventListener('mousedown', function(e) {
-        if (e.target === title || e.target === header) {
-            isDragging = true;
-            const rect = container.getBoundingClientRect();
-            dragOffset.x = e.clientX - rect.left;
-            dragOffset.y = e.clientY - rect.top;
-            container.style.cursor = 'grabbing';
-        }
-    });
-
-    document.addEventListener('mousemove', function(e) {
-        if (isDragging) {
-            container.style.left = (e.clientX - dragOffset.x + container.offsetWidth / 2) + 'px';
-            container.style.top = (e.clientY - dragOffset.y + container.offsetHeight / 2) + 'px';
-            container.style.transform = 'none';
-        }
-    });
-
-    document.addEventListener('mouseup', function() {
-        isDragging = false;
-        container.style.cursor = '';
-    });
     } else {
 //-------------------------------------------------------------------------------------------------
     const REMINDERS = [
@@ -737,7 +810,7 @@ let currentURL = location.href;
 
     /* ============================================= */
 
-    let currentURL = location.href;
+   // let currentURL = location.href;
     let reminderBox = null;
 
     function checkAndShow() {
