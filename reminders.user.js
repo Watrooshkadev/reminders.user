@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      2.9
+// @version      3.0
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -316,6 +316,16 @@ let currentURL = location.href;
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'buttons-container';
 
+    const Priemyan = document.createElement('button');
+        Priemyan.className = 'action-button';
+        Priemyan.textContent = "ПРИЕМКА Яндекс (Водители/Клиенты)";
+
+// Кнопка открытия отдельного окна генератора ШК
+const openBarcodeWindowBtn = document.createElement('button');
+openBarcodeWindowBtn.className = 'action-button';
+openBarcodeWindowBtn.title = 'Открыть генератор ШК';
+openBarcodeWindowBtn.textContent = 'Генератор ШК';
+
     // Кнопка сохранения истории в файл
     const saveButton = document.createElement('button');
     saveButton.className = 'action-button save';
@@ -337,7 +347,7 @@ let currentURL = location.href;
     // Статус
     const status = document.createElement('div');
     status.id = 'inputStatus';
-    status.textContent = 'Статус ОК';
+    status.textContent = 'Здесь ТОЛЬКО Выдача и приемка авито, По яндексу ТОЛЬКО выдача';
 
     // Контейнер для статистики
     const statsContainer = document.createElement('div');
@@ -389,6 +399,9 @@ let currentURL = location.href;
     contentArea.className = 'content-area';
 
     // Собираем структуру
+
+    buttonsContainer.appendChild(Priemyan);
+    buttonsContainer.appendChild(openBarcodeWindowBtn);
     buttonsContainer.appendChild(saveButton);
     buttonsContainer.appendChild(clearButton);
     header.appendChild(title);
@@ -401,8 +414,6 @@ let currentURL = location.href;
     container.appendChild(contentArea);
 
     document.body.appendChild(container);
-
-      
 
 
     // Функция для определения типа команды
@@ -488,7 +499,7 @@ function loadBarcodeLibrary(callback) {
 
         : ''
     }
-    <button class="barcode-btn" data-command="${command}">Сгенерировать ШК</button>
+    <button class="barcode-btn" data-command="${command}">ШК</button>
     <button class="copy-btn" data-command="${command}">Копировать</button>
 </div>
 
@@ -865,6 +876,460 @@ window.addEventListener('focus', () => {
 input.addEventListener('blur', () => {
     setTimeout(() => input.focus(), 0);
 });
+
+        Priemyan.addEventListener('click', function () {
+        const text = input.value.trim();
+        openOrPriemYandexPvz();
+
+});
+
+function openOrPriemYandexPvz() {
+        const windowName = 'yandex_pvz_prei';
+        const url = 'https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request';
+        const tab = window.open('', windowName);
+        if (tab && !tab.closed) {
+            tab.focus();
+            try {
+                if (!tab.location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request')) {
+                    tab.location.href = url;
+                }
+            } catch (e) {}
+            return tab;
+        }
+        return window.open(url, windowName);
+    }
+//---------------------------------------
+        openBarcodeWindowBtn.addEventListener('click', () => {
+    // Открываем окно на весь экран
+    const win = window.open('', 'barcode_generator',
+        'width=' + screen.width + ',height=' + screen.height + ',left=0,top=0,resizable=yes,scrollbars=yes');
+
+    win.document.write(`
+        <html>
+        <head>
+            <title>Генератор Штрихкодов</title>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+            <style>
+                * {
+                    box-sizing: border-box;
+                }
+
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    background: #f0f0f0;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    overflow: hidden;
+                }
+
+                .header {
+                    background: linear-gradient(135deg, #2c3e50, #4a6491);
+                    color: white;
+                    padding: 20px 30px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-shrink: 0;
+                }
+
+                .header h1 {
+                    margin: 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                }
+
+                .controls-panel {
+                    background: white;
+                    padding: 25px;
+                    margin: 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                    align-items: center;
+                    flex-shrink: 0;
+                }
+
+                .input-group {
+                    flex: 1;
+                    min-width: 300px;
+                }
+
+                .input-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-weight: 600;
+                    color: #333;
+                    font-size: 14px;
+                }
+
+                #barcodeInput {
+                    width: 100%;
+                    padding: 14px 18px;
+                    font-size: 16px;
+                    border-radius: 8px;
+                    border: 2px solid #ddd;
+                    transition: all 0.3s;
+                    outline: none;
+                }
+
+                #barcodeInput:focus {
+                    border-color: #007bff;
+                    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+                }
+
+                .buttons-group {
+                    display: flex;
+                    gap: 12px;
+                    margin-left: auto;
+                }
+
+                .btn {
+                    padding: 14px 28px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    border-radius: 8px;
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    min-width: 140px;
+                }
+
+                .btn-primary {
+                    background: linear-gradient(135deg, #007bff, #0056b3);
+                    color: white;
+                }
+
+                .btn-primary:hover {
+                    background: linear-gradient(135deg, #0056b3, #004494);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,91,187,0.3);
+                }
+
+                .btn-secondary {
+                    background: linear-gradient(135deg, #28a745, #1e7e34);
+                    color: white;
+                }
+
+                .btn-secondary:hover {
+                    background: linear-gradient(135deg, #1e7e34, #155724);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+                }
+
+                .btn-print {
+                    background: linear-gradient(135deg, #6c757d, #495057);
+                    color: white;
+                }
+
+                .btn-print:hover {
+                    background: linear-gradient(135deg, #495057, #343a40);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(108,117,125,0.3);
+                }
+
+                .barcode-container {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 30px;
+                    overflow: auto;
+                    margin: 0 20px 20px;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+                }
+
+                #barcode {
+                    max-width: 95%;
+                    height: auto;
+                    max-height: 70vh;
+                    background: white;
+                    padding: 25px;
+                    border-radius: 8px;
+                    border: 1px solid #eee;
+                }
+
+                .placeholder {
+                    color: #999;
+                    font-size: 18px;
+                    text-align: center;
+                    padding: 50px;
+                }
+
+                /* Стили для печати */
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+
+                    .barcode-container, .barcode-container * {
+                        visibility: visible;
+                    }
+
+                    .barcode-container {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        height: 100%;
+                        margin: 0;
+                        padding: 0;
+                        box-shadow: none;
+                        background: white;
+                    }
+
+                    #barcode {
+                        max-width: 100%;
+                        max-height: 100%;
+                        border: none;
+                        padding: 0;
+                    }
+
+                    .no-print {
+                        display: none !important;
+                    }
+                }
+
+                .icon {
+                    width: 20px;
+                    height: 20px;
+                }
+
+                .icon-print {
+                    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z'/%3E%3C/svg%3E") no-repeat center;
+                }
+
+                .icon-generate {
+                    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") no-repeat center;
+                }
+
+                @media (max-width: 768px) {
+                    .controls-panel {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+
+                    .input-group {
+                        min-width: 100%;
+                    }
+
+                    .buttons-group {
+                        width: 100%;
+                        margin-left: 0;
+                        justify-content: stretch;
+                    }
+
+                    .btn {
+                        flex: 1;
+                        min-width: 0;
+                    }
+
+                    .header {
+                        flex-direction: column;
+                        gap: 15px;
+                        text-align: center;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Генератор Штрихкодов</h1>
+                <div>Введите текст и нажмите "Сгенерировать"</div>
+            </div>
+
+            <div class="controls-panel no-print">
+                <div class="input-group">
+                    <label for="barcodeInput">Текст для генерации штрих-кода:</label>
+                    <input id="barcodeInput" type="text" placeholder="Например: 123456789012" autofocus>
+                </div>
+
+                <div class="buttons-group">
+                    <button id="generateBtn" class="btn btn-primary">
+                        <span class="icon icon-generate"></span>
+                        Сгенерировать
+                    </button>
+                    <button id="printBtn" class="btn btn-print">
+                        <span class="icon icon-print"></span>
+                        Печать
+                    </button>
+                </div>
+            </div>
+
+            <div class="barcode-container">
+                <div id="placeholder" class="placeholder">
+                    Штрих-код появится здесь после генерации
+                </div>
+                <svg id="barcode" style="display: none;"></svg>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const input = document.getElementById('barcodeInput');
+                    const generateBtn = document.getElementById('generateBtn');
+                    const printBtn = document.getElementById('printBtn');
+                    const svg = document.getElementById('barcode');
+                    const placeholder = document.getElementById('placeholder');
+
+                    // Функция проверки загрузки библиотеки
+                    function isJsBarcodeLoaded() {
+                        return typeof JsBarcode !== 'undefined';
+                    }
+
+                    // Функция генерации штрих-кода
+                    function generateBarcode() {
+                        const text = input.value.trim();
+
+                        if (!text) {
+                            alert('Пожалуйста, введите текст для генерации штрих-кода!');
+                            input.focus();
+                            return;
+                        }
+
+                        if (!isJsBarcodeLoaded()) {
+                            alert('Библиотека штрих-кодов загружается. Попробуйте через секунду.');
+                            return;
+                        }
+
+                        try {
+                            // Показываем SVG и скрываем плейсхолдер
+                            svg.style.display = 'block';
+                            placeholder.style.display = 'none';
+
+                            // Очищаем предыдущий штрих-код
+                            while (svg.firstChild) {
+                                svg.removeChild(svg.firstChild);
+                            }
+
+                            // Генерируем новый штрих-код
+                            JsBarcode(svg, text, {
+                                format: "CODE128",
+                                displayValue: true,
+                                width: 2,
+                                height: 120,
+                                fontSize: 22,
+                                margin: 15,
+                                background: "#ffffff",
+                                lineColor: "#000000",
+                                textMargin: 5,
+                                fontOptions: "bold"
+                            });
+
+                            // Добавляем информацию о штрих-коде
+                            const info = document.createElement('div');
+                            info.style.cssText = 'text-align: center; margin-top: 20px; color: #666; font-size: 14px;';
+
+
+                            // Удаляем старую информацию, если есть
+                            const oldInfo = svg.parentNode.querySelector('.barcode-info');
+                            if (oldInfo) {
+                                oldInfo.remove();
+                            }
+
+                            info.className = 'barcode-info';
+                            svg.parentNode.appendChild(info);
+
+                            // Фокус на поле ввода
+                            input.focus();
+
+                        } catch (error) {
+                            alert('Ошибка при генерации штрих-кода: ' + error.message);
+                            console.error(error);
+                        }
+                    }
+
+                    // Функция печати
+                    function printBarcode() {
+                        if (svg.style.display === 'none' || !svg.hasChildNodes()) {
+                            alert('Сначала сгенерируйте штрих-код для печати!');
+                            return;
+                        }
+
+                        // Настройка стилей для печати
+                        const printStyles = document.createElement('style');
+                        printStyles.textContent = \`
+                            @media print {
+                                body { margin: 0; padding: 0; }
+                                .barcode-container {
+                                    display: flex !important;
+                                    align-items: center !important;
+                                    justify-content: center !important;
+                                    height: 100vh !important;
+                                    width: 100vw !important;
+                                    margin: 0 !important;
+                                    padding: 20px !important;
+                                }
+                                #barcode {
+                                    max-width: 100% !important;
+                                    max-height: 100% !important;
+                                }
+                            }
+                        \`;
+                        document.head.appendChild(printStyles);
+
+                        // Печать
+                        window.print();
+
+                        // Удаляем стили после печати
+                        setTimeout(() => {
+                            document.head.removeChild(printStyles);
+                        }, 100);
+                    }
+
+                    // Обработчики событий
+                    generateBtn.addEventListener('click', generateBarcode);
+                    printBtn.addEventListener('click', printBarcode);
+
+                    input.addEventListener('keypress', e => {
+                        if (e.key === 'Enter') {
+                            generateBarcode();
+                        }
+                    });
+
+                    // Автоматическая генерация при загрузке, если есть текст в localStorage
+                    window.addEventListener('load', () => {
+                        const savedText = localStorage.getItem('lastBarcodeText');
+                        if (savedText) {
+                            input.value = savedText;
+                            setTimeout(() => {
+                                if (isJsBarcodeLoaded()) {
+                                    generateBarcode();
+                                }
+                            }, 500);
+                        }
+                    });
+
+                    // Сохраняем текст при вводе
+                    input.addEventListener('input', () => {
+                        localStorage.setItem('lastBarcodeText', input.value);
+                    });
+
+                    // Фокус на поле ввода
+                    input.focus();
+                });
+            </script>
+        </body>
+        </html>
+    `);
+
+    win.document.close();
+});
+
+        //--------------------------------
+
 
     } else {
 //-------------------------------------------------------------------------------------------------
