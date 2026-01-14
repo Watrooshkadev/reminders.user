@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      2.8
+// @version      2.9
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -41,17 +41,17 @@ let currentURL = location.href;
     --radius-sm: 12px;
 }
 
+
 /* Контейнер */
 #floatingInputContainer {
     position: fixed;
     inset: 0;
     margin: auto;
-    width: 880px;
-    height: 720px;
+    width: calc(100%);
+    height: calc(100%);
 
     background: var(--bg-main);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
+    border: 0px solid var(--border);
 
     box-shadow:
         0 20px 40px rgba(0,0,0,.08);
@@ -274,6 +274,23 @@ let currentURL = location.href;
 .invoice-btn:hover {
     background: var(--bg-hover);
 }
+.barcode-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: #8e44ad;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+
+.barcode-btn:hover {
+    background: var(--bg-hover);
+}
+
 
 `);
 
@@ -429,6 +446,14 @@ let currentURL = location.href;
         avitoValue1.textContent = stats.avito1;
         yandexValue.textContent = stats.yandex;
     }
+function loadBarcodeLibrary(callback) {
+    if (window.JsBarcode) return callback();
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+    script.onload = callback;
+    document.head.appendChild(script);
+}
 
     // Функция для обновления отображения истории
     function updateHistoryDisplay() {
@@ -452,10 +477,18 @@ let currentURL = location.href;
                         <span class="history-type">${type}</span>
                     </div>
                    <div class="history-actions">
-    ${type === 'АВИТОПРИЕМК'
-        ? `<button class="invoice-btn" data-command="${command}">Накладная</button>`
+
+    ${type === 'АВИТОПРИЕМКА'
+        ? `<button class="invoice-btn" data-command="${command}">История заказа</button>`
+
         : ''
     }
+    ${type === 'АВИТОВЫДАЧА'
+        ? `<button class="invoice-btn" data-command="${command}">История заказа</button>`
+
+        : ''
+    }
+    <button class="barcode-btn" data-command="${command}">Сгенерировать ШК</button>
     <button class="copy-btn" data-command="${command}">Копировать</button>
 </div>
 
@@ -479,12 +512,68 @@ contentArea.querySelectorAll('.invoice-btn').forEach(button => {
     button.addEventListener('click', function () {
         const command = this.getAttribute('data-command');
 
-        const url = `https://pvz.avito.ru/accept/parcel/${command}/waybill`;
+        const url = `https://pvz.avito.ru/history/${command}`;
         window.open(url, '_blank');
 
         showStatus(`Открыта накладная: ${command}`, '#ff9500');
     });
 });
+        //ШК
+      contentArea.querySelectorAll('.barcode-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const command = this.getAttribute('data-command');
+
+        // открываем новое полноэкранное окно
+        const win = window.open('', '_blank');
+
+        win.document.write(`
+            <html>
+            <head>
+                <title>Штрихкод: ${command}</title>
+                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+                <style>
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        background: #fff; /* светлый фон под ШК */
+                    }
+                    svg {
+                        max-width: 90%;
+                        max-height: 90%;
+                    }
+                </style>
+            </head>
+            <body>
+                <svg id="barcode"></svg>
+                <script>
+                    window.onload = function() {
+                        JsBarcode(document.getElementById("barcode"), "${command}", {
+                            format: "CODE128",
+                            displayValue: true,
+                            width: 4,
+                            height: 200,
+                            fontSize: 40,
+                            margin: 10
+                        });
+                    }
+                </script>
+            </body>
+            </html>
+        `);
+
+        win.document.close();
+
+        showStatus(`Штрихкод сгенерирован: ${command}`, '#8e44ad');
+    });
+});
+
+
+
 
     }
 
@@ -760,6 +849,22 @@ contentArea.querySelectorAll('.invoice-btn').forEach(button => {
         updateStatsDisplay();
         updateHistoryDisplay();
     }, 100);
+// Везде клик — возвращаем фокус на input
+document.addEventListener('click', (e) => {
+    if (e.target !== input) {
+        input.focus();
+    }
+});
+
+// При переключении вкладки обратно — фокус
+window.addEventListener('focus', () => {
+    input.focus();
+});
+
+// При случайной потере фокуса — восстанавливаем
+input.addEventListener('blur', () => {
+    setTimeout(() => input.focus(), 0);
+});
 
     } else {
 //-------------------------------------------------------------------------------------------------
