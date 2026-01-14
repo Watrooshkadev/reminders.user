@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.0
+// @version      3.1
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -18,6 +18,7 @@
 
 
 
+const SCRIPT_VERSION = GM_info?.script?.version || 'dev';
 
 let currentURL = location.href;
     if (location.href.includes('https://www.123.ru/')) {
@@ -313,6 +314,15 @@ let currentURL = location.href;
     title.id = 'floatingInputTitle';
     title.textContent = 'Введите команду';
 
+        const versionLabel = document.createElement('span');
+versionLabel.textContent = `v${SCRIPT_VERSION}`;
+versionLabel.style.cssText = `
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 10px;
+`;
+
+
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'buttons-container';
 
@@ -382,6 +392,24 @@ openBarcodeWindowBtn.textContent = 'Генератор ШК';
     yandexLabel.className = 'stat-label';
     yandexLabel.textContent = 'ЯНДЕКС';
 
+
+        const breakStat = document.createElement('div');
+breakStat.className = 'stat-item';
+
+const breakValue = document.createElement('div');
+breakValue.className = 'stat-value';
+breakValue.textContent = '—';
+
+const breakLabel = document.createElement('div');
+breakLabel.className = 'stat-label';
+breakLabel.textContent = 'Макс. перерыв';
+
+breakStat.appendChild(breakValue);
+breakStat.appendChild(breakLabel);
+
+title.appendChild(versionLabel);
+
+
     // Собираем статистику
     avitoStat.appendChild(avitoValue);
     avitoStat.appendChild(avitoLabel);
@@ -390,6 +418,7 @@ openBarcodeWindowBtn.textContent = 'Генератор ШК';
     yandexStat.appendChild(yandexValue);
     yandexStat.appendChild(yandexLabel);
 
+    statsContainer.appendChild(breakStat);
     statsContainer.appendChild(avitoStat);
     statsContainer.appendChild(avitoStat1);
     statsContainer.appendChild(yandexStat);
@@ -449,6 +478,58 @@ openBarcodeWindowBtn.textContent = 'Генератор ШК';
 
         return stats;
     }
+function calculateMaxBreak() {
+    if (commandHistory.length < 2) {
+        return null;
+    }
+
+    let max = {
+        duration: 0,
+        from: null,
+        to: null
+    };
+
+    for (let i = 1; i < commandHistory.length; i++) {
+        const prevItem = commandHistory[i - 1];
+        const currItem = commandHistory[i];
+
+        const prevTime = new Date(prevItem.date).getTime();
+        const currTime = new Date(currItem.date).getTime();
+        const diff = currTime - prevTime;
+
+        if (diff > max.duration) {
+            max = {
+                duration: diff,
+                from: prevItem,
+                to: currItem
+            };
+        }
+    }
+
+    return max;
+}
+function formatTimeRange(fromItem, toItem) {
+    const from = new Date(fromItem.date);
+    const to = new Date(toItem.date);
+
+    const fromStr = from.toLocaleTimeString();
+    const toStr = to.toLocaleTimeString();
+
+    return `${fromStr} → ${toStr}`;
+}
+
+function formatDuration(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    if (minutes === 0) {
+        return `${seconds} сек`;
+    }
+
+    return `${minutes} мин ${seconds} сек`;
+}
+
 
     // Функция для обновления отображения статистики
     function updateStatsDisplay() {
@@ -456,6 +537,17 @@ openBarcodeWindowBtn.textContent = 'Генератор ШК';
         avitoValue.textContent = stats.avito;
         avitoValue1.textContent = stats.avito1;
         yandexValue.textContent = stats.yandex;
+
+      const maxBreak = calculateMaxBreak();
+
+    if (maxBreak) {
+        breakValue.textContent = formatDuration(maxBreak.duration);
+        breakLabel.textContent =
+            `Перерыв: ${formatTimeRange(maxBreak.from, maxBreak.to)}`;
+    } else {
+        breakValue.textContent = '—';
+        breakLabel.textContent = 'Макс. перерыв';
+    }
     }
 function loadBarcodeLibrary(callback) {
     if (window.JsBarcode) return callback();
