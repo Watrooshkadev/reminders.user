@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.5
+// @version      3.6
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -22,6 +22,75 @@
     const UID_YA = "148822177";
 
     let currentURL = location.href;
+/* const input = document.querySelector('[data-testid="client-issuing-search-suggest"]');
+
+if (input && document.activeElement !== input) {
+    input.focus();
+} */
+
+fokus();
+function fokus(){
+
+const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
+if(savedState){
+    if (location.pathname === '/tpl-outlet/148822177/issuing') {
+        const selector = '[data-testid="client-issuing-search-suggest"]';
+const focusInput = () => {
+    const input = document.querySelector(selector);
+    if (input && document.activeElement !== input) {
+        input.focus();
+    }
+};
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        focusInput();
+    }
+});
+
+// фокус при обновлении / первом открытии
+window.addEventListener('load', focusInput);
+
+
+    } else if (location.pathname === '/tpl-outlet/148822177/acceptance-request') {
+    const selector = 'input[inputmode="search"][type="text"]'; // универсальный селектор
+
+    const focusInput = () => {
+        const input = document.querySelector(selector);
+        if (input && document.activeElement !== input) {
+            input.focus();
+        }
+    };
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            focusInput();
+        }
+    });
+
+    window.addEventListener('load', focusInput);
+}
+}
+}
+
+/*     if (location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing')) {
+function sendKey(char) { document.dispatchEvent(new KeyboardEvent('keydown', { key: char, code: 'Digit' + char, bubbles: true })); }
+        async function realPaste(text) {
+    await navigator.clipboard.writeText(text);
+
+    document.activeElement.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'v',
+            code: 'KeyV',
+            ctrlKey: true,
+            bubbles: true
+        })
+    );
+}
+    } */
+
+
+
     if (location.href.includes('https://www.123.ru/')) {
         GM_addStyle(`
 :root {
@@ -537,7 +606,26 @@ dateFilter.addEventListener('click', (e) => {
     dateFilter.showPicker?.(); // современный метод в Chrome/Edge
     dateFilter.focus(); // fallback для других браузеров
 });
+const autoFocusToggle = document.createElement('label');
+autoFocusToggle.style.display = 'flex';
+autoFocusToggle.style.alignItems = 'center';
+autoFocusToggle.style.gap = '5px';
+autoFocusToggle.style.fontSize = '13px';
 
+const autoFocusCheckbox = document.createElement('input');
+autoFocusCheckbox.type = 'checkbox';
+
+autoFocusToggle.appendChild(autoFocusCheckbox);
+autoFocusToggle.appendChild(document.createTextNode('Автофокус на поле ввода Яндекс (Работает только после обновление стр. яндекса'));
+
+buttonsContainer.appendChild(autoFocusToggle);
+// Получаем значение при инициализации
+const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
+autoFocusCheckbox.checked = savedState;
+
+autoFocusCheckbox.addEventListener('change', () => {
+    GM_setValue('boxfokus', autoFocusCheckbox.checked);
+});
 
 
 
@@ -890,6 +978,8 @@ dateFilter.addEventListener('click', (e) => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
                     showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
+                    // Копируем в буфер обмена
+                    copyToClipboard(command);
                     openOrFocusYandexPvzpri();
                 });
             });
@@ -898,6 +988,8 @@ dateFilter.addEventListener('click', (e) => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
                     showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
+                    // Копируем в буфер обмена
+                    copyToClipboard(command);
                     openOrFocusYandexPvz();
                 });
             });
