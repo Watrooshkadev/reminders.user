@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.2
+// @version      3.3
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -628,13 +628,13 @@ dateFilter.addEventListener('click', (e) => {
         function updateSyncIndicator(status) {
             // status = 'ok' | 'pending' | 'error'
             if (!syncIndicator) return;
-
+            console.log(status);
             if (status === 'ok') {
                 syncIndicator.style.background = '#27ae60'; // зеленый
                 syncIndicatortext.textContent = 'Синхронизировано';
             } else if (status === 'pending') {
                 syncIndicator.style.background = '#f39c12'; // оранжевый
-                syncIndicatortext.textContent = 'Есть несинхронизированные изменения';
+                syncIndicatortext.textContent = 'Идет синхронизация';
             } else if (status === 'error') {
                 syncIndicator.style.background = '#e74c3c'; // красный
                 syncIndicatortext.textContent = 'Ошибка синхронизации';
@@ -1607,7 +1607,7 @@ document.getElementById('printBtn').onclick = () => {
                             }
                         })
                     });
-                    updateSyncIndicator('ok');
+                    //updateSyncIndicator('ok');
                     showStatus('История синхронизирована ↑', '#27ae60');
                 } catch (e) {
                     console.error('Ошибка при обновлении Gist:', e);
