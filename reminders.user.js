@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.4
+// @version      3.5
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -120,12 +120,12 @@
 /* Основная зона */
 .content-area {
     flex: 1;
-    margin: 16px;
+    margin: 0px;
     padding: 16px;
 
     background: white;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
+    border: 0px solid var(--border);
 
     overflow-y: auto;
 }
@@ -133,7 +133,7 @@
 /* Input */
 #userInput {
     width: calc(100% - 32px);
-    margin: 0 16px 14px;
+    margin: 15 15px 2px;
     padding: 14px 16px;
 
     border-radius: var(--radius-sm);
@@ -956,11 +956,13 @@ JsBarcode("#barcode","${command}",{
 
         // Функция для отображения статуса
         function showStatus(message, color = '#666') {
+            status.style.display = ''
             status.textContent = message;
             status.style.color = color;
             setTimeout(() => {
                 status.style.color = '#666';
-            }, 3000);
+                status.style.display = 'none'
+            }, 10000);
         }
 
         // Функция для копирования в буфер обмена
@@ -1541,7 +1543,7 @@ document.getElementById('printBtn').onclick = () => {
                 })
             });
 
-            showStatus('История синхронизирована ↑', '#27ae60');
+           // showStatus('История синхронизирована ↑', '#27ae60');
         }
 
         async function loadFromGist() {
@@ -1558,7 +1560,7 @@ document.getElementById('printBtn').onclick = () => {
             updateStatsDisplay();
             updateHistoryDisplay();
 
-            showStatus('История загружена ↓', '#007aff');
+            //showStatus('История загружена ↓', '#007aff');
         }
 
 
@@ -1607,15 +1609,15 @@ document.getElementById('printBtn').onclick = () => {
                         })
                     });
                     //updateSyncIndicator('ok');
-                    showStatus('История синхронизирована ↑', '#27ae60');
+                   // showStatus('История синхронизирована ↑', '#27ae60');
                 } catch (e) {
                     console.error('Ошибка при обновлении Gist:', e);
                     updateSyncIndicator('error');
-                    showStatus('Ошибка при синхронизации', '#e74c3c');
+                    //showStatus('Ошибка при синхронизации', '#e74c3c');
                 }
             } else {
                 updateSyncIndicator('ok');
-                showStatus('История уже актуальна', '#007aff');
+                //showStatus('История уже актуальна', '#007aff');
             }
 
             GM_setValue('commandHistory', mergedHistory);
