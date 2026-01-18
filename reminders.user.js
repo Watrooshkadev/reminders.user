@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.3
+// @version      3.4
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -371,7 +371,6 @@ async function initCredentials() {
     }
 }
 
-// Вызов функции в начале скрипта
 (async () => {
     const { GITHUB_TOKEN, GIST_ID } = await initCredentials();
 
