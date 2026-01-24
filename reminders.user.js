@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.7
+// @version      3.8
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -16,80 +16,52 @@
 // ==/UserScript==
 (function() {
     'use strict';
-    const DELETE_PASSWORD_HASH = '09b56f21e3c4370acc15a9e76ed4064f50d06085b630f7b2e736d8a90b369923';
+    const DELETE_PASSWORD_HASH = 'aac67e6564d6a0ffb29dd6579c2fabc1e02467db95cb2a472a36d7a576d75df8';
     const GIST_FILE = 'reminders_history.json';
     const SCRIPT_VERSION = GM_info?.script?.version || 'dev';
     const UID_YA = "148822177";
 
     let currentURL = location.href;
-/* const input = document.querySelector('[data-testid="client-issuing-search-suggest"]');
 
-if (input && document.activeElement !== input) {
-    input.focus();
-} */
 
-fokus();
-function fokus(){
+    fokus();
+    function fokus(){
+        const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
+        if(savedState){
+            if (location.pathname === `/tpl-outlet/${UID_YA}/issuing`) {
+                const selector = '[data-testid="client-issuing-search-suggest"]';
+                const focusInput = () => {
+                    const input = document.querySelector(selector);
+                    if (input && document.activeElement !== input) {
+                        input.focus();
+                    }
+                };
 
-const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
-if(savedState){
-    if (location.pathname === '/tpl-outlet/148822177/issuing') {
-        const selector = '[data-testid="client-issuing-search-suggest"]';
-const focusInput = () => {
-    const input = document.querySelector(selector);
-    if (input && document.activeElement !== input) {
-        input.focus();
-    }
-};
-
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        focusInput();
-    }
-});
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        focusInput();
+                    }
+                });
 
 // фокус при обновлении / первом открытии
-window.addEventListener('load', focusInput);
-
-
-    } else if (location.pathname === '/tpl-outlet/148822177/acceptance-request') {
-    const selector = 'input[inputmode="search"][type="text"]'; // универсальный селектор
-
-    const focusInput = () => {
-        const input = document.querySelector(selector);
-        if (input && document.activeElement !== input) {
-            input.focus();
+                window.addEventListener('load', focusInput);
+            } else if (location.pathname === `/tpl-outlet/${UID_YA}/acceptance-request`) {
+                const selector = 'input[inputmode="search"][type="text"]'; // универсальный селектор
+                const focusInput = () => {
+                    const input = document.querySelector(selector);
+                    if (input && document.activeElement !== input) {
+                        input.focus();
+                    }
+                };
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        focusInput();
+                    }
+                });
+                window.addEventListener('load', focusInput);
+            }
         }
-    };
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            focusInput();
-        }
-    });
-
-    window.addEventListener('load', focusInput);
-}
-}
-}
-
-/*     if (location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing')) {
-function sendKey(char) { document.dispatchEvent(new KeyboardEvent('keydown', { key: char, code: 'Digit' + char, bubbles: true })); }
-        async function realPaste(text) {
-    await navigator.clipboard.writeText(text);
-
-    document.activeElement.dispatchEvent(
-        new KeyboardEvent('keydown', {
-            key: 'v',
-            code: 'KeyV',
-            ctrlKey: true,
-            bubbles: true
-        })
-    );
-}
-    } */
-
-
+    }
 
     if (location.href.includes('https://www.123.ru/')) {
         GM_addStyle(`
@@ -328,6 +300,9 @@ function sendKey(char) { document.dispatchEvent(new KeyboardEvent('keydown', { k
 
     transition: background .15s;
 }
+.del-btn:hover {
+    background: var(--bg-hover);
+}
 
 .copy-btn:hover {
     background: var(--bg-hover);
@@ -366,6 +341,9 @@ function sendKey(char) { document.dispatchEvent(new KeyboardEvent('keydown', { k
 
     transition: background .15s;
 }
+.yanbt-btn:hover {
+    background: var(--bg-hover);
+}
 .yan-btn {
     padding: 4px 10px;
     font-size: 11px;
@@ -377,6 +355,24 @@ function sendKey(char) { document.dispatchEvent(new KeyboardEvent('keydown', { k
     cursor: pointer;
 
     transition: background .15s;
+}
+.yan-btn:hover {
+    background: var(--bg-hover);
+}
+.gz-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: #007795;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+.gz-btn:hover {
+    background: var(--bg-hover);
 }
 
 .invoice-btn:hover {
@@ -911,7 +907,8 @@ autoFocusCheckbox.addEventListener('change', () => {
     }
 
                     ${type === 'ЯНДЕКС'
-            ? `<button class="yanbt-btn" data-command="${command}">Отправить</button>
+            ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>
+            <button class="yanbt-btn" data-command="${command}">Отправить</button>
                            <button class="yan-btn" data-command="${command}">Выдать</button>`
                         : ''
     }
@@ -991,6 +988,15 @@ autoFocusCheckbox.addEventListener('change', () => {
                     // Копируем в буфер обмена
                     copyToClipboard(command);
                     openOrFocusYandexPvz();
+                });
+            });
+            contentArea.querySelectorAll('.gz-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const command = this.getAttribute('data-command');
+                    showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
+                    // Копируем в буфер обмена
+                    copyToClipboard(command);
+                    openOrFocusYandexgz();
                 });
             });
 
@@ -1120,12 +1126,27 @@ JsBarcode("#barcode","${command}",{
 
         function openOrFocusYandexPvz() {
             const windowName = 'yandex_pvz_deliver_tab';
-            const url = 'https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing';
+            const url = `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`;
             const tab = window.open('', windowName);
             if (tab && !tab.closed) {
                 tab.focus();
                 try {
-                    if (!tab.location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/issuing')) {
+                    if (!tab.location.href.includes(`https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`)) {
+                        tab.location.href = url;
+                    }
+                } catch (e) {}
+                return tab;
+            }
+            return window.open(url, windowName);
+        }
+        function openOrFocusYandexgz() {
+            const windowName = 'yandex_pvz_deliver_gz';
+            const url = `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables`;
+            const tab = window.open('', windowName);
+            if (tab && !tab.closed) {
+                tab.focus();
+                try {
+                    if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables`)) {
                         tab.location.href = url;
                     }
                 } catch (e) {}
@@ -1135,12 +1156,12 @@ JsBarcode("#barcode","${command}",{
         }
         function openOrFocusYandexPvzpri() {
             const windowName = 'yandex_pvz_deliver_tab_pri';
-            const url = 'https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request';
+            const url = `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request`;
             const tab = window.open('', windowName);
             if (tab && !tab.closed) {
                 tab.focus();
                 try {
-                    if (!tab.location.href.includes("https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request")) {
+                    if (!tab.location.href.includes(`https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request`)) {
                         tab.location.href = url;
                     }
                 } catch (e) {}
@@ -1206,6 +1227,7 @@ JsBarcode("#barcode","${command}",{
                 showStatus(`Команда АВИТОПРИЕМКА: ${text} (скопировано)`, '#27ae60');
                 openOrFocusAvitoPiemk(text);
             } else {
+
                 //showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
                 //openOrFocusYandexPvz();
             }
@@ -1299,12 +1321,12 @@ JsBarcode("#barcode","${command}",{
 
         function openOrPriemYandexPvz() {
             const windowName = 'yandex_pvz_prei';
-            const url = 'https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request';
+            const url = `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request`;
             const tab = window.open('', windowName);
             if (tab && !tab.closed) {
                 tab.focus();
                 try {
-                    if (!tab.location.href.includes('https://hubs.market.yandex.ru/tpl-outlet/148822177/acceptance-request')) {
+                    if (!tab.location.href.includes(`https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request`)) {
                         tab.location.href = url;
                     }
                 } catch (e) {}
@@ -1312,201 +1334,7 @@ JsBarcode("#barcode","${command}",{
             }
             return window.open(url, windowName);
         }
-        //---------------------------------------НАЧАЛО ГЕНЕРАТОРА
-        /*   openBarcodeWindowBtn.addEventListener('click', () => {
-    const win = window.open('', 'barcode_generator',
-        `width=${screen.width},height=${screen.height},left=0,top=0,resizable=yes,scrollbars=yes`);
-
-    win.document.write(`
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Генератор ШК</title>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-
-<style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f0f0f0;
-}
-
-.header {
-    background: #2c3e50;
-    color: white;
-    padding: 15px;
-    text-align: center;
-}
-
-.controls {
-    background: white;
-    padding: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.controls input,
-.controls button,
-.controls select {
-    padding: 10px;
-    font-size: 14px;
-}
-
-.container {
-    background: white;
-    margin: 20px;
-    padding: 20px;
-    text-align: center;
-}
-
-#barcode {
-    margin-top: 20px;
-}
-
-#labelContainer {
-    display: none;
-    margin-bottom: 20px;
-}
-
-#labelIcons {
-    font-size: 40px;
-}
-
-#labelText {
-    font-size: 48px;
-    font-weight: 900;
-    letter-spacing: 5px;
-}
-
-@media print {
-    body * { visibility: hidden; }
-
-    #printArea, #printArea * {
-        visibility: visible;
-    }
-
-    #printArea {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-}
-</style>
-</head>
-
-<body>
-
-<div class="header">
-    <h2>Генератор штрих-кодов и маркировки</h2>
-</div>
-
-<div class="controls">
-    <input id="barcodeInput" placeholder="Введите код">
-
-    <button id="generateBtn">Сгенерировать ШК</button>
-
-    <select id="labelMode">
-        <option value="fragile">⚠ Хрупко</option>
-        <option value="glass">🍷 Стекло</option>
-        <option value="careful">⬆ Осторожно</option>
-    </select>
-
-    <button id="toggleLabelBtn">Показать / скрыть</button>
-
-    <button id="printLabelOnlyBtn">🖨 Только маркировка</button>
-    <button id="printBtn">Печать</button>
-</div>
-
-<div class="container" id="printArea">
-
-    <div id="labelContainer">
-        <div id="labelIcons"></div>
-        <div id="labelText"></div>
-    </div>
-
-    <svg id="barcode"></svg>
-
-</div>
-
-<script>
-const input = document.getElementById('barcodeInput');
-const barcodeSvg = document.getElementById('barcode');
-
-const labelContainer = document.getElementById('labelContainer');
-const labelIcons = document.getElementById('labelIcons');
-const labelText = document.getElementById('labelText');
-const labelMode = document.getElementById('labelMode');
-
-let labelVisible = false;
-let printOnlyLabel = false;
-
-const LABELS = {
-    fragile: { text: 'ХРУПКО', icons: '📦 ⚠ 📦' },
-    glass: { text: 'СТЕКЛО', icons: '🍷 ⚠ 🍷' },
-    careful: { text: 'ОСТОРОЖНО', icons: '⬆ ⬆ ⬆' }
-};
-
-function updateLabel() {
-    const m = LABELS[labelMode.value];
-    labelText.textContent = m.text;
-    labelIcons.textContent = m.icons;
-}
-
-document.getElementById('generateBtn').onclick = () => {
-    if (!input.value.trim()) return alert('Введите код');
-    JsBarcode(barcodeSvg, input.value, {
-        format: 'CODE128',
-        displayValue: true,
-        width: 2,
-        height: 120,
-        fontSize: 22
-    });
-};
-
-document.getElementById('toggleLabelBtn').onclick = () => {
-    labelVisible = !labelVisible;
-    labelContainer.style.display = labelVisible ? 'block' : 'none';
-    if (labelVisible) updateLabel();
-};
-
-labelMode.onchange = () => {
-    if (labelVisible) updateLabel();
-};
-
-document.getElementById('printLabelOnlyBtn').onclick = () => {
-    printOnlyLabel = true;
-    labelVisible = true;
-    labelContainer.style.display = 'block';
-    updateLabel();
-    barcodeSvg.style.display = 'none';
-};
-
-document.getElementById('printBtn').onclick = () => {
-    if (!labelVisible && !barcodeSvg.hasChildNodes()) {
-        alert('Нечего печатать');
-        return;
-    }
-
-    window.print();
-
-    if (printOnlyLabel) {
-        barcodeSvg.style.display = 'block';
-        printOnlyLabel = false;
-    }
-};
-</script>
-
-</body>
-</html>
-    `);
-
-    win.document.close();
-});*/
+     
         openBarcodeWindowBtn.addEventListener('click', () => {
             const win = window.open('', 'barcode_generator',
                                     `width=${screen.width},height=${screen.height},left=0,top=0,resizable=yes,scrollbars=yes`);
@@ -1611,7 +1439,6 @@ document.getElementById('printBtn').onclick = () => {
             win.document.close();
         });
 
-        /* ---------------------------------------------------------------------------КОНЕЦ ГЕНЕРАТОРА */
 
         async function syncToGist() {
             const tokengist = GM_getValue('GIST_ID');
@@ -1732,7 +1559,7 @@ document.getElementById('printBtn').onclick = () => {
                 message: `<b>•</b> Максимальная сумма сторон 2.4м<br><b>•</b> Одна сторона не более 120см`,
             },
             {
-                match: "https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request/",
+                match: `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request/`,
                 requireExtraPath: true,
                 title: "ℹ️ Что нельзя отправлять через Яндекс Доставку",
                 message: `<strong>Запрещено к отправке:</strong><br><b>•</b> Вещества, способные к детонации или взрыву
