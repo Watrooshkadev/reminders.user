@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      3.8
+// @version      3.9
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -392,6 +392,22 @@
 }
 
 .barcode-btn:hover {
+    background: var(--bg-hover);
+}
+.barcodeqr-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: #8e44ad;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+
+.barcodeqr-btn:hover {
     background: var(--bg-hover);
 }
 
@@ -906,14 +922,28 @@ autoFocusCheckbox.addEventListener('change', () => {
                         : ''
     }
 
-                    ${type === 'ЯНДЕКС'
-            ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>
-            <button class="yanbt-btn" data-command="${command}">Отправить</button>
-                           <button class="yan-btn" data-command="${command}">Выдать</button>`
-                        : ''
-    }
+                  ${/^LO-\d{9}$/.test(command)
+  ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
+  : ''
+}
 
-                    <button class="barcode-btn" data-command="${command}">ШК</button>
+                   ${type === 'ЯНДЕКС'
+  ? `
+    ${!/^LO-\d{9}-\d{5}$/.test(command)
+      ? `<button class="yanbt-btn" data-command="${command}">Отправить</button>`
+      : ''
+    }
+    <button class="yan-btn" data-command="${command}">Выдать</button>
+  `
+  : ''
+}
+
+
+                   ${/^\d{12}$/.test(command)
+  ? `<button class="barcodeqr-btn" data-command="${command}">QR</button>`
+  : `<button class="barcode-btn" data-command="${command}">ШК</button>`
+}
+
                     <button class="copy-btn" data-command="${command}">Копировать</button>
                     <button class="del-btn" data-command="${command}">🗑️</button>
                 </div>
@@ -996,7 +1026,7 @@ autoFocusCheckbox.addEventListener('change', () => {
                     showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
                     // Копируем в буфер обмена
                     copyToClipboard(command);
-                    openOrFocusYandexgz();
+                    openOrFocusYandexgz(command);
                 });
             });
 
@@ -1041,10 +1071,59 @@ JsBarcode("#barcode","${command}",{
 </html>
             `);
 
+
             win.document.close();
             showStatus(`Штрихкод сгенерирован: ${command}`, '#8e44ad');
         });
     });
+            contentArea.querySelectorAll('.barcodeqr-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const command = this.getAttribute('data-command');
+        const win = window.open('', '_blank');
+
+        win.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>QR ${command}</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+html,body{
+    margin:0;
+    width:100vw;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#fff;
+}
+#qrcode canvas{
+    width:400px;
+    height:400px;
+}
+</style>
+</head>
+<body>
+<div id="qrcode"></div>
+
+<script>
+new QRCode(document.getElementById("qrcode"), {
+    text: "${command}",
+    width: 400,
+    height: 400,
+    correctLevel: QRCode.CorrectLevel.H
+});
+</script>
+</body>
+</html>
+        `);
+
+        win.document.close();
+        showStatus(`QR-код сгенерирован: ${command}`, '#8e44ad');
+    });
+});
+
         }
         dateFilter.addEventListener('change', () => {
             selectedDate = dateFilter.value || null;
@@ -1139,14 +1218,15 @@ JsBarcode("#barcode","${command}",{
             }
             return window.open(url, windowName);
         }
-        function openOrFocusYandexgz() {
+        function openOrFocusYandexgz(comm) {
+            //https://logistics.market.yandex.ru/tpl-outlet/148822177/dropoff-orders/LO-780247597
             const windowName = 'yandex_pvz_deliver_gz';
-            const url = `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables`;
+            const url = `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/dropoff-orders/${comm}`;
             const tab = window.open('', windowName);
             if (tab && !tab.closed) {
                 tab.focus();
                 try {
-                    if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables`)) {
+                    if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/dropoff-orders/${comm}`)) {
                         tab.location.href = url;
                     }
                 } catch (e) {}
