@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.1
+// @version      4.2
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -374,6 +374,22 @@
 .gz-btn:hover {
     background: var(--bg-hover);
 }
+.gza-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: #007795;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+.gza-btn:hover {
+    background: var(--bg-hover);
+}
+
 
 .invoice-btn:hover {
     background: var(--bg-hover);
@@ -927,7 +943,7 @@ autoFocusCheckbox.addEventListener('change', () => {
   : ''
 }
                 ${/^\d{6}-\d{6}$/.test(command)
-  ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
+  ? `<button class="gza-btn" data-command="${command}">Поиск по грузоместу</button>`
   : ''
 }
 
@@ -1031,6 +1047,15 @@ autoFocusCheckbox.addEventListener('change', () => {
                     // Копируем в буфер обмена
                     copyToClipboard(command);
                     openOrFocusYandexgz(command);
+                });
+            });
+            contentArea.querySelectorAll('.gza-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const command = this.getAttribute('data-command');
+                    showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
+                    // Копируем в буфер обмена
+                    copyToClipboard(command);
+                    openOrFocusYandexgza(command);
                 });
             });
 
@@ -1231,6 +1256,22 @@ new QRCode(document.getElementById("qrcode"), {
                 tab.focus();
                 try {
                     if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/dropoff-orders/${comm}`)) {
+                        tab.location.href = url;
+                    }
+                } catch (e) {}
+                return tab;
+            }
+            return window.open(url, windowName);
+        }
+        function openOrFocusYandexgza(comm) {
+            //https://logistics.market.yandex.ru/tpl-outlet/148822177/dropoff-orders/LO-780247597
+            const windowName = 'yandex_pvz_deliver_gz';
+            const url = `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables?sortableTypes=all&sortableStatuses=&sortableStatusesLeafs=&sortableBarcode=${comm}&outboundIdTitle=&groupingDirectionId=&groupingDirectionName=`;
+            const tab = window.open('', windowName);
+            if (tab && !tab.closed) {
+                tab.focus();
+                try {
+                    if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables?sortableTypes=all&sortableStatuses=&sortableStatusesLeafs=&sortableBarcode=${comm}&outboundIdTitle=&groupingDirectionId=&groupingDirectionName=`)) {
                         tab.location.href = url;
                     }
                 } catch (e) {}
