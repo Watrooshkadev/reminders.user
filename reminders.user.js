@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.0
+// @version      4.1
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -923,6 +923,10 @@ autoFocusCheckbox.addEventListener('change', () => {
     }
 
                   ${/^LO-\d{9}$/.test(command)
+  ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
+  : ''
+}
+                ${/^\d{6}-\d{6}$/.test(command)
   ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
   : ''
 }
