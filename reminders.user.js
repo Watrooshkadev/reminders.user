@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.2
+// @version      4.3
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -493,7 +493,10 @@ async function initCredentials() {
 
         // Загружаем историю из сохраненных данных
         let commandHistory = GM_getValue('commandHistory', []);
-        let selectedDate = null; // YYYY-MM-DD или null
+       // let selectedDate = null; // YYYY-MM-DD или null
+        // сегодняшняя дата в формате YYYY-MM-DD
+        let selectedDate = new Date().toISOString().split('T')[0];
+
 
         let historyIndex = commandHistory.length;
 
@@ -525,15 +528,6 @@ async function initCredentials() {
         Priemyan.className = 'action-button';
         Priemyan.textContent = "ПРИЕМКА Яндекс (Водители/Продавцы)";
 
-        const syncBtn = document.createElement('button');
-        syncBtn.className = 'action-button';
-        syncBtn.textContent = '☁️ Sync';
-        syncBtn.onclick = smartSync;
-
-        const loadBtn = document.createElement('button');
-        loadBtn.className = 'action-button';
-        loadBtn.textContent = '⬇ Load';
-        loadBtn.onclick = loadFromGist;
 
 
 
@@ -552,7 +546,7 @@ async function initCredentials() {
         // Статус
         const status = document.createElement('div');
         status.id = 'inputStatus';
-        status.textContent = 'Здесь ТОЛЬКО Выдача и приемка авито, По яндексу нажатие по списку';
+        status.style.display = 'none'
 
         // Контейнер для статистики
         const statsContainer = document.createElement('div');
@@ -599,24 +593,6 @@ async function initCredentials() {
         breakLabel.className = 'stat-label';
         breakLabel.textContent = 'Макс. перерыв';
 
-        const syncIndicator = document.createElement('span');
-        syncIndicator.id = 'syncIndicator';
-        syncIndicator.style.cssText = `
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    margin-left: 6px;
-    border-radius: 50%;
-    background: #ccc; /* серый - не синхронизировано */
-    vertical-align: middle;
-`;
-        const syncIndicatortext = document.createElement('span');
-        syncIndicatortext.textContent = `Синхронизация`;
-        syncIndicatortext.style.cssText = `
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-left: 10px;
-`;
         // Фильтр по дате
         const dateFilter = document.createElement('input');
         dateFilter.type = 'date';
@@ -627,7 +603,9 @@ async function initCredentials() {
         dateFilter.style.width = '100px';
         dateFilter.style.maxWidth = '200px';
         dateFilter.style.minWidth = '120px';
-        dateFilter.style.boxSizing = 'border-box'; // учитываем паддинги
+        dateFilter.style.boxSizing = 'border-box';
+        dateFilter.value = new Date().toISOString().split('T')[0];
+
 // добавляем событие, чтобы клик по всему полю открывал календарь
 dateFilter.addEventListener('click', (e) => {
     // вызываем фокус, чтобы календарь открылся
@@ -661,8 +639,6 @@ autoFocusCheckbox.addEventListener('change', () => {
         breakStat.appendChild(breakLabel);
 
         title.appendChild(versionLabel);
-        title.appendChild(syncIndicatortext);
-        title.appendChild(syncIndicator);
 
         // Собираем статистику
         avitoStat.appendChild(avitoValue);
@@ -684,10 +660,7 @@ autoFocusCheckbox.addEventListener('change', () => {
         contentArea.className = 'content-area';
 
         // Собираем структуру
-        buttonsContainer.appendChild(dateFilter);
-
-        buttonsContainer.appendChild(syncBtn);
-        //buttonsContainer.appendChild(loadBtn);
+        
         buttonsContainer.appendChild(Priemyan);
         buttonsContainer.appendChild(openBarcodeWindowBtn);
         header.appendChild(title);
@@ -727,34 +700,10 @@ autoFocusCheckbox.addEventListener('change', () => {
                     const data = await res.json();
                     const remoteHistory = JSON.parse(data.files[GIST_FILE].content).commandHistory || [];
                     const localHistory = GM_getValue('commandHistory', []);
-                    if (JSON.stringify(remoteHistory) === JSON.stringify(localHistory)) {
-                        updateSyncIndicator('ok');
-                    } else {
-                        updateSyncIndicator('pending');
-                    }
-                } else {
-                    updateSyncIndicator('error');
                 }
             } catch(e) {
-                updateSyncIndicator('error');
             }
-        })(); //синх
-
-        function updateSyncIndicator(status) {
-            // status = 'ok' | 'pending' | 'error'
-            if (!syncIndicator) return;
-            console.log(status);
-            if (status === 'ok') {
-                syncIndicator.style.background = '#27ae60'; // зеленый
-                syncIndicatortext.textContent = 'Синхронизировано';
-            } else if (status === 'pending') {
-                syncIndicator.style.background = '#f39c12'; // оранжевый
-                syncIndicatortext.textContent = 'Идет синхронизация';
-            } else if (status === 'error') {
-                syncIndicator.style.background = '#e74c3c'; // красный
-                syncIndicatortext.textContent = 'Ошибка синхронизации';
-            }
-        }
+        })();
 
         // Функция для подсчета статистики
         function calculateStats() {
@@ -900,6 +849,7 @@ autoFocusCheckbox.addEventListener('change', () => {
             document.head.appendChild(script);
         }
         // Функция для обновления отображения истории
+        let delbtn = false;
         function updateHistoryDisplay() {
 
             // применяем сортировку + фильтр ТОЛЬКО для отображения
@@ -965,7 +915,12 @@ autoFocusCheckbox.addEventListener('change', () => {
 }
 
                     <button class="copy-btn" data-command="${command}">Копировать</button>
-                    <button class="del-btn" data-command="${command}">🗑️</button>
+
+
+                    ${delbtn == true
+            ? `<button class="del-btn" data-command="${command}">🗑️</button>`
+                        : ''
+    }
                 </div>
             </div>
         `;
@@ -1312,8 +1267,18 @@ new QRCode(document.getElementById("qrcode"), {
             if (!text) {
                 showStatus('Пожалуйста, введите команду', '#e74c3c');
                 return;
+            } else if(text == "lfnf"){
+                buttonsContainer.appendChild(dateFilter);
+                showStatus('Пожалуйста', '#666');
+                input.value = '';
+                return;
+            } else if(text == "del"){
+                delbtn = !delbtn;
+                updateHistoryDisplay();
+                showStatus('Пожалуйста', '#666');
+                input.value = '';
+                return;
             }
-
             // Определяем тип команды
             const commandType = getCommandType(text);
 
@@ -1615,7 +1580,6 @@ document.getElementById('printBtn').onclick = () => {
 
             const localHistory = GM_getValue('commandHistory', []);
 
-            updateSyncIndicator('pending'); // пока синхронизируем
 
             let remoteHistory = [];
             try {
@@ -1625,7 +1589,6 @@ document.getElementById('printBtn').onclick = () => {
                 remoteHistory = JSON.parse(data.files[GIST_FILE].content).commandHistory || [];
             } catch (e) {
                 console.warn('Gist недоступен или пуст:', e);
-                updateSyncIndicator('error');
             }
 
             // Объединяем истории
@@ -1652,15 +1615,12 @@ document.getElementById('printBtn').onclick = () => {
                             }
                         })
                     });
-                    //updateSyncIndicator('ok');
                    // showStatus('История синхронизирована ↑', '#27ae60');
                 } catch (e) {
                     console.error('Ошибка при обновлении Gist:', e);
-                    updateSyncIndicator('error');
                     //showStatus('Ошибка при синхронизации', '#e74c3c');
                 }
             } else {
-                updateSyncIndicator('ok');
                 //showStatus('История уже актуальна', '#007aff');
             }
 
