@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.3
+// @version      4.4
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -374,6 +374,11 @@
 .gz-btn:hover {
     background: var(--bg-hover);
 }
+.texth-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    color: #000000;
+}
 .gza-btn {
     padding: 4px 10px;
     font-size: 11px;
@@ -635,12 +640,13 @@ autoFocusCheckbox.addEventListener('change', () => {
 
 
 
-        breakStat.appendChild(breakValue);
-        breakStat.appendChild(breakLabel);
+        
 
         title.appendChild(versionLabel);
 
         // Собираем статистику
+        breakStat.appendChild(breakValue);
+        breakStat.appendChild(breakLabel);
         avitoStat.appendChild(avitoValue);
         avitoStat.appendChild(avitoLabel);
         avitoStat1.appendChild(avitoValue1);
@@ -887,6 +893,11 @@ autoFocusCheckbox.addEventListener('change', () => {
             ? `<button class="invoice-btn" data-command="${command}">История заказа</button>`
                         : ''
     }
+
+              ${/^53\d{19}(-\d)?$/.test(command)
+  ? `<text  class="texth-btn" data-command="${command}">Возможно приемка продавца</text>`
+  : ''
+}
 
                   ${/^LO-\d{9}$/.test(command)
   ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
@@ -1316,9 +1327,12 @@ new QRCode(document.getElementById("qrcode"), {
             } else if (commandType === 'АВИТОПРИЕМКА') {
                 showStatus(`Команда АВИТОПРИЕМКА: ${text} (скопировано)`, '#27ae60');
                 openOrFocusAvitoPiemk(text);
+            } else if(commandType === 'ЯНДЕКС'){
+                if(/^LO-\d{9}-\d{5}$/.test(text)){
+                    openOrFocusYandexPvz();
+                }
             } else {
-
-                //showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
+            //showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
                 //openOrFocusYandexPvz();
             }
 
