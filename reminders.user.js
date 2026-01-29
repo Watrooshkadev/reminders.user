@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.4
+// @version      4.5
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -1749,6 +1749,147 @@ document.getElementById('printBtn').onclick = () => {
         // let currentURL = location.href;
         let reminderBox = null;
 
+const YA_RETURN_TABLE = `
+<style>
+    .ya-table-wrapper {
+        max-height: 55vh;          /* чтобы было куда скроллить */
+        overflow-y: auto;
+    }
+
+    .ya-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .ya-table th,
+    .ya-table td {
+        padding: 8px;
+        border: 1px solid #dfe3e8;
+        vertical-align: middle;
+        background: #fff;
+    }
+
+    .ya-table th:first-child,
+    .ya-table td:first-child {
+        text-align: left;
+        font-weight: 500;
+    }
+
+    /* 🧷 фиксированная шапка */
+    .ya-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f2f5f9;
+        font-weight: 600;
+    }
+
+    /* 🟦 hover-подсветка строки */
+    .ya-table tbody tr:hover {
+        background: #eef4ff;
+    }
+</style>
+
+<div class="ya-table-wrapper">
+<table class="ya-table">
+    <thead>
+        <tr>
+            <th>Проверка</th>
+            <th>Товар не подошёл</th>
+            <th>Привезли не то</th>
+            <th>Есть недостатки</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Упаковка от этого товара в наличии?</td>
+            <td>✅</td><td>✅</td><td>❌</td>
+        </tr>
+        <tr>
+            <td>Упаковка не повреждена</td>
+            <td>✅</td><td>✅</td><td>❌</td>
+        </tr>
+        <tr>
+            <td>Внешний вид товара соответствует причине возврата</td>
+            <td>✅</td><td>✅</td><td>✅</td>
+        </tr>
+        <tr>
+            <td>На товаре нет следов эксплуатации</td>
+            <td>✅</td><td>✅</td><td>❌</td>
+        </tr>
+        <tr>
+            <td>Характеристики совпадают с описанием</td>
+            <td>✅</td><td>❌</td><td>✅</td>
+        </tr>
+        <tr>
+            <td>Фото в карточке совпадает с товаром</td>
+            <td>✅</td><td>❌</td><td>✅</td>
+        </tr>
+        <tr>
+            <td>Фото и комментарии клиента совпадают</td>
+            <td>✅</td><td>✅</td><td>✅</td>
+        </tr>
+        <tr>
+            <td>Комплектация соответствует описанию</td>
+            <td>✅</td><td>❌</td><td>❌</td>
+        </tr>
+        <tr>
+            <td>Этикетки, бирки, пломбы в наличии</td>
+            <td>✅</td><td>✅</td><td>❌</td>
+        </tr>
+        <tr>
+            <td>Есть паспорт / инструкция / гарантийный талон</td>
+            <td>✅</td><td>✅</td><td>✅</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+`;
+        function closeFloating() {
+    if (reminderBox) {
+        reminderBox.remove();
+        reminderBox = null;
+    }
+}
+
+function waitForYaReturn(timeout = 700, interval = 50) {
+    return new Promise((resolve) => {
+        const start = Date.now();
+
+        const check = () => {
+            const span = document.querySelector(
+                'span[data-i18n-key="pages.acceptance-request-item:page-title.CLIENT_RETURN"]'
+            );
+
+            if (span) {
+                closeFloating(); // ← закрываем старую
+                resolve(span.textContent.toLowerCase().includes("возврат"));
+                return true;
+            }
+
+            if (Date.now() - start >= timeout) {
+                closeFloating(); // ← тоже закрываем
+                resolve(false);
+                return true;
+            }
+            return false;
+        };
+
+        if (check()) return;
+
+        const timer = setInterval(() => {
+            if (check()) clearInterval(timer);
+        }, interval);
+    });
+}
+
+
+
+
+
         function checkAndShow() {
             if (reminderBox) {
                 reminderBox.remove();
@@ -1757,13 +1898,20 @@ document.getElementById('printBtn').onclick = () => {
 
             for (const r of REMINDERS) {
                 if (location.href.includes(r.match)) {
-                    showFloating(r.title, r.message);
+
+waitForYaReturn().then(isReturn => {
+    if (isReturn) {
+        showFloating("Возврат", YA_RETURN_TABLE, 600, 80);
+    } else {
+          showFloating(r.title, r.message);
+    }
+});
                     break; // показываем только одно напоминание
                 }
             }
         }
 
-        function showFloating(title, msg) {
+        function showFloating(title, msg, width = 360, maxHeight = 75) {
             const box = document.createElement("div");
             reminderBox = box;
 
@@ -1771,8 +1919,8 @@ document.getElementById('printBtn').onclick = () => {
         position:fixed;
         top:24px;
         right:24px;
-        width:360px;
-        max-height:75vh;
+        width:${width}px;
+        max-height:${maxHeight}vh;
         backdrop-filter: blur(6px);
         border-radius:16px;
         box-shadow:
