@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.5
+// @version      4.6
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -17,7 +17,6 @@
 (function() {
     'use strict';
     const DELETE_PASSWORD_HASH = 'aac67e6564d6a0ffb29dd6579c2fabc1e02467db95cb2a472a36d7a576d75df8';
-    const GIST_FILE = 'reminders_history.json';
     const SCRIPT_VERSION = GM_info?.script?.version || 'dev';
     const UID_YA = "148822177";
 
@@ -434,49 +433,6 @@
 
 
 `);
-async function initCredentials() {
-    const ENCRYPTED_GIST_ID = 'U2FsdGVkX1+PxFYY5kZdfXXPpttyEl9FaoiBj+oNhFAuKsxL+LrYqKFC5KY4dZn7e9xeY4XMb2fWPP0gAyuskQ==';
-    const ENCRYPTED_GITHUB_TOKEN = 'U2FsdGVkX18bKy2psUjPHJyp6UvuznDUGEDz2toxz8Oibo5XeV7QFNXFXpBohx7G1H8zI8iCEus5toh8HYcsjGThP28HMwUYYoobEWwhlk3sVJ5MsftCTw5YVeG/KZbjE5GOrhPuV9u8l/dzioWw/g==';
-
-    // Запрос пароля один раз
-    const password = prompt('Введите пароль для синхронизации:');
-    if (!password) {
-        GM_setValue('GITHUB_TOKEN', '0');
-        GM_setValue('GIST_ID', '0');
-        return { GITHUB_TOKEN: '0', GIST_ID: '0' };
-    }
-
-    try {
-        // Расшифровка через CryptoJS
-        const GIST_ID = CryptoJS.AES.decrypt(ENCRYPTED_GIST_ID, password).toString(CryptoJS.enc.Utf8);
-        const GITHUB_TOKEN = CryptoJS.AES.decrypt(ENCRYPTED_GITHUB_TOKEN, password).toString(CryptoJS.enc.Utf8);
-
-        if (!GIST_ID || !GITHUB_TOKEN) {
-            GM_setValue('GITHUB_TOKEN', '0');
-            GM_setValue('GIST_ID', '0');
-            alert('Неверный пароль!');
-            return { GITHUB_TOKEN: '0', GIST_ID: '0' };
-        }
-
-        // Сохраняем токен через GM_setValue
-        GM_setValue('GITHUB_TOKEN', GITHUB_TOKEN);
-        GM_setValue('GIST_ID', GIST_ID);
-
-        return { GITHUB_TOKEN, GIST_ID };
-
-    } catch (e) {
-        GM_setValue('GITHUB_TOKEN', '0');
-        GM_setValue('GIST_ID', '0');
-        alert('Ошибка расшифровки!');
-        console.error(e);
-        return { GITHUB_TOKEN: '0', GIST_ID: '0' };
-    }
-}
-
-(async () => {
-    const { GITHUB_TOKEN, GIST_ID } = await initCredentials();
-
-})();
 
 
 
@@ -640,7 +596,7 @@ autoFocusCheckbox.addEventListener('change', () => {
 
 
 
-        
+
 
         title.appendChild(versionLabel);
 
@@ -666,7 +622,7 @@ autoFocusCheckbox.addEventListener('change', () => {
         contentArea.className = 'content-area';
 
         // Собираем структуру
-        
+
         buttonsContainer.appendChild(Priemyan);
         buttonsContainer.appendChild(openBarcodeWindowBtn);
         header.appendChild(title);
@@ -698,18 +654,7 @@ autoFocusCheckbox.addEventListener('change', () => {
             return 'ЯНДЕКС';
         }
 
-        (async () => {
-            try {
-                const tokengist = GM_getValue('GIST_ID');
-                const res = await fetch(`https://api.github.com/gists/${tokengist}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    const remoteHistory = JSON.parse(data.files[GIST_FILE].content).commandHistory || [];
-                    const localHistory = GM_getValue('commandHistory', []);
-                }
-            } catch(e) {
-            }
-        })();
+
 
         // Функция для подсчета статистики
         function calculateStats() {
@@ -963,7 +908,6 @@ autoFocusCheckbox.addEventListener('change', () => {
                         updateStatsDisplay();
                         updateHistoryDisplay();
                         showStatus(`Удалено: ${command}`, '#27ae60');
-                        syncToGist();
                     }
                 });
             });
@@ -1319,7 +1263,6 @@ new QRCode(document.getElementById("qrcode"), {
             // Копируем в буфер обмена
             copyToClipboard(text);
 
-            smartSync();
             // Ваша логика обработки команд
             if (commandType === 'АВИТОВЫДАЧА') {
                 showStatus(`Команда АВИТОВЫДАЧА: ${text} (скопировано)`, '#27ae60');
@@ -1438,7 +1381,7 @@ new QRCode(document.getElementById("qrcode"), {
             }
             return window.open(url, windowName);
         }
-     
+
         openBarcodeWindowBtn.addEventListener('click', () => {
             const win = window.open('', 'barcode_generator',
                                     `width=${screen.width},height=${screen.height},left=0,top=0,resizable=yes,scrollbars=yes`);
@@ -1542,111 +1485,6 @@ document.getElementById('printBtn').onclick = () => {
     `);
             win.document.close();
         });
-
-
-        async function syncToGist() {
-            const tokengist = GM_getValue('GIST_ID');
-            const token = GM_getValue('GITHUB_TOKEN');
-            if (!token) return alert('Нет GitHub Token');
-
-            const history = GM_getValue('commandHistory', []);
-
-            await fetch(`https://api.github.com/gists/${tokengist}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    files: {
-                        [GIST_FILE]: {
-                            content: JSON.stringify({ commandHistory: history }, null, 2)
-                        }
-                    }
-                })
-            });
-
-           // showStatus('История синхронизирована ↑', '#27ae60');
-        }
-
-        async function loadFromGist() {
-            const tokengist = GM_getValue('GIST_ID');
-            const res = await fetch(`https://api.github.com/gists/${tokengist}`);
-            const data = await res.json();
-
-            const content = data.files[GIST_FILE].content;
-            const parsed = JSON.parse(content);
-
-            GM_setValue('commandHistory', parsed.commandHistory || []);
-            commandHistory = parsed.commandHistory || [];
-
-            updateStatsDisplay();
-            updateHistoryDisplay();
-
-            //showStatus('История загружена ↓', '#007aff');
-        }
-
-
-        async function smartSync() {
-            const tokengist = GM_getValue('GIST_ID');
-            const token = GM_getValue('GITHUB_TOKEN');
-            if (!token) return alert('Нет GitHub Token');
-
-            const localHistory = GM_getValue('commandHistory', []);
-
-
-            let remoteHistory = [];
-            try {
-                const res = await fetch(`https://api.github.com/gists/${tokengist}`);
-                if (!res.ok) throw new Error('Не удалось загрузить Gist');
-                const data = await res.json();
-                remoteHistory = JSON.parse(data.files[GIST_FILE].content).commandHistory || [];
-            } catch (e) {
-                console.warn('Gist недоступен или пуст:', e);
-            }
-
-            // Объединяем истории
-            const mergedMap = new Map();
-            [...remoteHistory, ...localHistory].forEach(item => {
-                mergedMap.set(item.timestamp + item.command, item);
-            });
-            const mergedHistory = Array.from(mergedMap.values()).sort((a,b) => a.timestamp - b.timestamp);
-
-            // Если есть изменения → пушим
-            const needUpdate = JSON.stringify(mergedHistory) !== JSON.stringify(remoteHistory);
-
-            if (needUpdate) {
-                try {
-                    await fetch(`https://api.github.com/gists/${tokengist}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            files: {
-                                [GIST_FILE]: { content: JSON.stringify({ commandHistory: mergedHistory }, null, 2) }
-                            }
-                        })
-                    });
-                   // showStatus('История синхронизирована ↑', '#27ae60');
-                } catch (e) {
-                    console.error('Ошибка при обновлении Gist:', e);
-                    //showStatus('Ошибка при синхронизации', '#e74c3c');
-                }
-            } else {
-                //showStatus('История уже актуальна', '#007aff');
-            }
-
-            GM_setValue('commandHistory', mergedHistory);
-            commandHistory = mergedHistory;
-            updateStatsDisplay();
-            updateHistoryDisplay();
-        }
-
-
-
-        //--------------------------------
 
 
     } else {
