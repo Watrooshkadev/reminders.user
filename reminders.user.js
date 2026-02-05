@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      5.1
+// @version      5.2
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -512,6 +512,10 @@ brihgt.style.cssText = `
         const buttonsContainer = document.createElement('div');
         buttonsContainer.className = 'buttons-container';
 
+        const game = document.createElement('button');
+        game.className = 'action-button';
+        game.textContent = "Скоротать время :з";
+
         const Priemyan = document.createElement('button');
         Priemyan.className = 'action-button';
         Priemyan.textContent = "ПРИЕМКА Яндекс (Водители/Продавцы)";
@@ -662,6 +666,7 @@ autoFocusCheckbox.addEventListener('change', () => {
 
         // Собираем структуру
 
+        buttonsContainer.appendChild(game);
         buttonsContainer.appendChild(Priemyan);
         buttonsContainer.appendChild(docs);
         buttonsContainer.appendChild(openBarcodeWindowBtn);
@@ -1399,6 +1404,14 @@ const historyItem = {
             openOrPriemYandexPvz();
 
         });
+        game.addEventListener('click', function () {
+            const windowName = 'game1';
+            const url = `https://gaming.market.yandex.ru/?gameId=market_rush&platform=desktop`;
+            const tab = window.open('', windowName);
+            return window.open(url, windowName);
+
+
+        });
       docs.addEventListener('click', function () {
     const text = input.value.trim();
 
@@ -1519,6 +1532,7 @@ function updateBackgroundbutton(opacity = 0.9) {
     docs.style.background = linear;
     openBarcodeWindowBtn.style.background = linear;
     Priemyan.style.background = linear;
+    game.style.background = linear;
     settingsz.style.background = linear;
 
     // Статистика
@@ -1542,6 +1556,7 @@ function updateBackgroundrazm(blur = 100) {
     applyBlur(docs);
     applyBlur(openBarcodeWindowBtn);
     applyBlur(Priemyan);
+    applyBlur(game);
     applyBlur(settingsz);
 
     // Статистика
