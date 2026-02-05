@@ -67,7 +67,7 @@
     --radius: 16px;
     --radius-sm: 12px;
 
-  --bg-image: url("https://example.com/your-background.jpg");
+  
 }
 
 
@@ -82,8 +82,8 @@
     /* ФОН */
     background:
         linear-gradient(
-            rgba(255,255,255,1.0),
-            rgba(255,255,255,1.0)
+            rgba(255,255,255,0.50),
+            rgba(255,255,255,0.50)
         ),
         var(--bg-image);
 
@@ -463,6 +463,8 @@
 `);
 
 
+
+
         // Загружаем историю из сохраненных данных
         let commandHistory = GM_getValue('commandHistory', []);
        // let selectedDate = null; // YYYY-MM-DD или null
@@ -526,6 +528,10 @@ const docs = document.createElement('button');
         openBarcodeWindowBtn.className = 'action-button';
         openBarcodeWindowBtn.title = 'Открыть генератор ШК';
         openBarcodeWindowBtn.textContent = 'Генератор ШК / Маркировка';
+        const settingsz = document.createElement('button');
+        settingsz.className = 'action-button';
+        settingsz.title = 'Настройки';
+        settingsz.textContent = '⚙️';
 
         // Поле ввода
         const input = document.createElement('input');
@@ -541,6 +547,7 @@ const docs = document.createElement('button');
         // Контейнер для статистики
         const statsContainer = document.createElement('div');
         statsContainer.className = 'stats-container';
+       statsContainer.style.background = 'transparent';
 
         // Статистика для АВИТО
         const avitoStat = document.createElement('div');
@@ -655,6 +662,7 @@ autoFocusCheckbox.addEventListener('change', () => {
         buttonsContainer.appendChild(Priemyan);
         buttonsContainer.appendChild(docs);
         buttonsContainer.appendChild(openBarcodeWindowBtn);
+        buttonsContainer.appendChild(settingsz);
         header.appendChild(title);
         header.appendChild(brihgt);
         header.appendChild(buttonsContainer);
@@ -828,14 +836,20 @@ const now = Date.now();
             }
 
             let historyHTML = '';
-
+const savedButtonOpacity = GM_getValue('bgOpacitybut', 0.9);
             visibleItems.forEach((item) => {
                 const isHighlighted = item.highlightUntil && item.highlightUntil > now;
                 const time = item.time || '';
                 const command = item.command || '';
                 const type = item.type || getCommandType(command);
+                const bg = isHighlighted
+  ? 'linear-gradient(rgba(46,204,113,0.25), rgba(46,204,113,0.25))' // подсветка
+  : `linear-gradient(rgba(255,255,255,${savedButtonOpacity}), rgba(255,255,255,${savedButtonOpacity}))`;
+
                 historyHTML += `
-            <div class="history-item ${isHighlighted ? 'history-new' : ''}">
+              <div class="history-item ${isHighlighted ? 'history-new' : ''}"
+       style="background:  ${bg}">
+
                 <div class="history-content">
                     <span class="history-time">${time}</span>
                    ${type === 'АВИТОПРИЕМКА' || type === 'АВИТОВЫДАЧА'
@@ -922,6 +936,9 @@ ${/^(LO-\d{9})-\d{5}$/.test(command)
                 </div>
             </div>
         `;
+
+
+
     });
 
             contentArea.innerHTML = historyHTML;
@@ -1481,6 +1498,171 @@ const historyItem = {
             }
             return window.open(url, windowName);
         }
+function updateBackground(imageUrl, opacity = 0.5) {
+    const container = document.getElementById('floatingInputContainer');
+    if (!container) return;
+
+    container.style.background = `
+        linear-gradient(rgba(255,255,255,${opacity}), rgba(255,255,255,${opacity})),
+        url(${imageUrl})
+    `;
+    container.style.backgroundSize = 'cover';
+    container.style.backgroundPosition = 'center';
+    container.style.backgroundRepeat = 'no-repeat';
+}
+function updateBackgroundbutton(opacity = 0.9) {
+    const linear = `linear-gradient(rgba(255,255,255,${opacity}), rgba(255,255,255,${opacity}))`;
+
+    // Кнопки
+    docs.style.background = linear;
+    openBarcodeWindowBtn.style.background = linear;
+    Priemyan.style.background = linear;
+    settingsz.style.background = linear;
+
+    // Статистика
+    yandexStat.style.background = linear;
+    avitoStat.style.background = linear;
+    avitoStat1.style.background = linear;
+    breakStat.style.background = linear;
+
+ document.querySelectorAll('.history-item').forEach(el => { el.style.background = linear;});
+}
+
+
+       settingsz.addEventListener('click', () => {
+    // ===== Создание модального окна настроек =====
+    const settingsModal = document.createElement('div');
+    settingsModal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        margin: auto;
+        width: 400px;
+        max-width: 90%;
+        padding: 20px;
+        background: white;
+        border-radius: var(--radius-sm);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        z-index: 1000000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    `;
+
+    // Полупрозрачная подложка
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 999999;
+    `;
+    document.body.appendChild(overlay);
+
+    // Заголовок
+    const settingsTitle = document.createElement('div');
+    settingsTitle.textContent = 'Настройки фона';
+    settingsTitle.style.fontWeight = '600';
+    settingsTitle.style.fontSize = '16px';
+    settingsModal.appendChild(settingsTitle);
+
+    // Выбор изображения
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    settingsModal.appendChild(fileInput);
+
+    // Прозрачность
+    const opacityLabel = document.createElement('label');
+    opacityLabel.textContent = 'Прозрачность фона: ';
+    const opacityInput = document.createElement('input');
+    opacityInput.type = 'range';
+    opacityInput.min = 0;
+    opacityInput.max = 1;
+    opacityInput.step = 0.01;
+    opacityInput.value = GM_getValue('bgOpacity', 0.4);
+    opacityInput.style.verticalAlign = 'middle';
+    opacityLabel.appendChild(opacityInput);
+ // Прозрачность
+    const opacityLabel1 = document.createElement('label');
+    opacityLabel1.textContent = 'Прозрачность кнопок: ';
+    const opacityInput1 = document.createElement('input');
+    opacityInput1.type = 'range';
+    opacityInput1.min = 0;
+    opacityInput1.max = 1;
+    opacityInput1.step = 0.01;
+    opacityInput1.value = GM_getValue('bgOpacitybut', 0.9);
+    opacityInput1.style.verticalAlign = 'middle';
+    opacityLabel1.appendChild(opacityInput1);
+
+    settingsModal.appendChild(opacityLabel);
+    settingsModal.appendChild(opacityLabel1);
+
+    // Кнопка применить
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'action-button';
+    applyBtn.textContent = 'Применить';
+    settingsModal.appendChild(applyBtn);
+
+
+
+    // Кнопка применить
+    applyBtn.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = reader.result;
+                GM_setValue('bgImage', base64);
+                GM_setValue('bgOpacity', opacityInput.value);
+                GM_setValue('bgOpacitybut', opacityInput1.value);
+                updateBackground(base64, opacityInput.value);
+                updateBackgroundbutton(opacityInput1.value)
+                settingsModal.remove();
+                overlay.remove();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            GM_setValue('bgOpacity', opacityInput.value);
+            GM_setValue('bgOpacitybut', opacityInput1.value);
+            const savedImage = GM_getValue('bgImage', null);
+            if (savedImage) updateBackground(savedImage, opacityInput.value);
+            updateBackgroundbutton(opacityInput1.value)
+            settingsModal.remove();
+            overlay.remove();
+        }
+    });
+
+    // Закрытие по клику вне окна
+    overlay.addEventListener('click', () => {
+        settingsModal.remove();
+        overlay.remove();
+    });
+
+    document.body.appendChild(settingsModal);
+
+
+});
+        window.addEventListener('load', () => {
+
+    const savedImage = GM_getValue('bgImage', null);
+    const savedOpacity = GM_getValue('bgOpacity', 0.4);
+    const savedOpacitybut = GM_getValue('bgOpacitybut', 0.9);
+
+
+    if (savedImage) {
+        // Применяем сохранённый фон
+        updateBackground(savedImage, savedOpacity);
+    } else {
+        // Применяем фон по умолчанию
+        const defaultImage = "https://image.fonwall.ru/o/sw/wallpaper-desktop-landscape-buta.jpeg?auto=compress&fit=crop&w=1920&h=1080&domain=img3.fonwall.ru";
+        updateBackground(defaultImage, 0.5);
+    }
+
+    // Применяем сохранённую прозрачность кнопок
+    updateBackgroundbutton(savedOpacitybut);
+});
+
+
 
         openBarcodeWindowBtn.addEventListener('click', () => {
             const win = window.open('', 'barcode_generator',
