@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.7
+// @version      4.8
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -794,6 +794,14 @@ autoFocusCheckbox.addEventListener('change', () => {
         }
         // Функция для обновления отображения истории
         let delbtn = false;
+       function highlightLast4(text) {
+    if (!text) return '';
+    if (text.length <= 4) {
+        return `<strong style="font-size: 1.2em;">${text}</strong>`;
+    }
+    return `${text.slice(0, -4)}<strong style="font-size: 1.3em;">${text.slice(-4)}</strong>`;
+}
+
         function updateHistoryDisplay() {
 const now = Date.now();
             // применяем сортировку + фильтр ТОЛЬКО для отображения
@@ -823,7 +831,13 @@ const now = Date.now();
             <div class="history-item ${isHighlighted ? 'history-new' : ''}">
                 <div class="history-content">
                     <span class="history-time">${time}</span>
-                    <span class="history-command">${command}</span>
+                   ${type === 'АВИТОПРИЕМКА' || type === 'АВИТОВЫДАЧА'
+    ? `<span class="history-command">${highlightLast4(command)}</span>`
+    : type === 'ЯНДЕКС'
+        ? `<span class="history-command">${command}</span>`
+        : ''
+}
+
                     <!-- <span class="history-type">${type}</span>-->
                     ${
     type === 'ЯНДЕКС'
