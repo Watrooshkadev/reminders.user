@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.8
+// @version      4.9
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -66,6 +66,8 @@
 
     --radius: 16px;
     --radius-sm: 12px;
+
+  --bg-image: url("https://example.com/your-background.jpg");
 }
 
 
@@ -74,24 +76,30 @@
     position: fixed;
     inset: 0;
     margin: auto;
-    width: calc(100%);
-    height: calc(100%);
+    width: 100%;
+    height: 100%;
 
-    background: var(--bg-main);
-    border: 0px solid var(--border);
+    /* ФОН */
+    background:
+        linear-gradient(
+            rgba(255,255,255,1.0),
+            rgba(255,255,255,1.0)
+        ),
+        var(--bg-image);
 
-    box-shadow:
-        0 20px 40px rgba(0,0,0,.08);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    border: 0;
+    box-shadow: 0 20px 40px rgba(0,0,0,.08);
 
     z-index: 999999;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                 "SF Pro Display", Inter, system-ui, sans-serif;
-    color: var(--text-main);
 }
+
 
 /* Header */
 #floatingInputHeader {
@@ -100,7 +108,7 @@
     align-items: center;
 
     padding: 20px 24px;
-    background: var(--bg-soft);
+    background: transparent;
     border-bottom: 1px solid var(--border);
 }
 
@@ -164,7 +172,7 @@
     margin: 0px;
     padding: 16px;
 
-    background: white;
+    background: transparent;
     border-radius: var(--radius-sm);
     border: 0px solid var(--border);
 
@@ -487,7 +495,6 @@ const brihgt = document.createElement('span');
 brihgt.textContent = `18 лет исполнилось от: ${formattedDate}`;
 brihgt.style.cssText = `
   font-size: 14px;
-  color: var(--text-muted);
   margin-left: 5px;
 `;
 
@@ -660,6 +667,7 @@ autoFocusCheckbox.addEventListener('change', () => {
 
         document.body.appendChild(container);
 
+
         function getVisibleHistory() {
             return commandHistory.filter(item =>
                                          !selectedDate ||
@@ -826,7 +834,6 @@ const now = Date.now();
                 const time = item.time || '';
                 const command = item.command || '';
                 const type = item.type || getCommandType(command);
-
                 historyHTML += `
             <div class="history-item ${isHighlighted ? 'history-new' : ''}">
                 <div class="history-content">
@@ -866,6 +873,13 @@ const now = Date.now();
             ? `<button class="invoice-btn" data-command="${command}">История заказа</button>`
                         : ''
     }
+
+${/^(LO-\d{9})-\d{5}$/.test(command)
+  ? `<button class="gz-btn" data-command="${command.match(/^(LO-\d{9})-/)[1]}">
+       Поиск по грузоместу
+     </button>`
+  : ''
+}
 
                   ${/^LO-\d{9}$/.test(command)
   ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
