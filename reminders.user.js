@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      4.6
+// @version      4.7
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -16,7 +16,6 @@
 // ==/UserScript==
 (function() {
     'use strict';
-    const DELETE_PASSWORD_HASH = 'aac67e6564d6a0ffb29dd6579c2fabc1e02467db95cb2a472a36d7a576d75df8';
     const SCRIPT_VERSION = GM_info?.script?.version || 'dev';
     const UID_YA = "148822177";
 
@@ -43,20 +42,6 @@
                 });
 
 // фокус при обновлении / первом открытии
-                window.addEventListener('load', focusInput);
-            } else if (location.pathname === `/tpl-outlet/${UID_YA}/acceptance-request`) {
-                const selector = 'input[inputmode="search"][type="text"]'; // универсальный селектор
-                const focusInput = () => {
-                    const input = document.querySelector(selector);
-                    if (input && document.activeElement !== input) {
-                        input.focus();
-                    }
-                };
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'visible') {
-                        focusInput();
-                    }
-                });
                 window.addEventListener('load', focusInput);
             }
         }
@@ -148,7 +133,23 @@
 .action-button:hover {
     background: var(--bg-hover);
 }
+.docs-button {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    cursor: pointer;
 
+    font-size: 13px;
+    font-weight: 500;
+    background: white;
+    color: var(--text-main);
+
+    transition: background .2s, border .2s;
+}
+
+.docs-button:hover {
+    background: var(--bg-hover);
+}
 .action-button.save {
     color: var(--success);
 }
@@ -393,7 +394,21 @@
 .gza-btn:hover {
     background: var(--bg-hover);
 }
+.gzp-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
 
+    background: white;
+    border: 1px solid var(--border);
+    color: #007795;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+.gzp-btn:hover {
+    background: var(--bg-hover);
+}
 
 .invoice-btn:hover {
     background: var(--bg-hover);
@@ -431,25 +446,13 @@
     background: var(--bg-hover);
 }
 
+.history-new {
+    background: rgba(46, 204, 113, 0.25);
+    border-left: 4px solid #2ecc71;
+    transition: background 0.3s ease;
+}
 
 `);
-
-
-
-        async function checkPassword(input) {
-            if (!input) return false; // если null или пустая строка, сразу false
-
-            const hashBuffer = await crypto.subtle.digest(
-                'SHA-256',
-                new TextEncoder().encode(input)
-            );
-
-            const hex = [...new Uint8Array(hashBuffer)]
-            .map(x => x.toString(16).padStart(2, '0'))
-            .join('');
-
-            return hex === DELETE_PASSWORD_HASH;
-        } //256
 
 
         // Загружаем историю из сохраненных данных
@@ -473,6 +476,22 @@
         title.id = 'floatingInputTitle';
         title.textContent = 'Введите команду';
 
+ const today = new Date();
+const date18 = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+
+const formattedDate = [date18.getDate(), date18.getMonth() + 1, date18.getFullYear()]
+  .map(n => String(n).padStart(2, '0'))
+  .join('.');
+
+const brihgt = document.createElement('span');
+brihgt.textContent = `18 лет исполнилось от: ${formattedDate}`;
+brihgt.style.cssText = `
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-left: 5px;
+`;
+
+
         const versionLabel = document.createElement('span');
         versionLabel.textContent = `v${SCRIPT_VERSION}`;
         versionLabel.style.cssText = `
@@ -488,6 +507,9 @@
         const Priemyan = document.createElement('button');
         Priemyan.className = 'action-button';
         Priemyan.textContent = "ПРИЕМКА Яндекс (Водители/Продавцы)";
+const docs = document.createElement('button');
+        docs.className = 'docs-button';
+        docs.textContent = "Документы яндекс";
 
 
 
@@ -577,15 +599,14 @@ const autoFocusToggle = document.createElement('label');
 autoFocusToggle.style.display = 'flex';
 autoFocusToggle.style.alignItems = 'center';
 autoFocusToggle.style.gap = '5px';
-autoFocusToggle.style.fontSize = '13px';
+autoFocusToggle.style.fontSize = '10px';
 
 const autoFocusCheckbox = document.createElement('input');
 autoFocusCheckbox.type = 'checkbox';
 
 autoFocusToggle.appendChild(autoFocusCheckbox);
-autoFocusToggle.appendChild(document.createTextNode('Автофокус на поле ввода Яндекс (Работает только после обновление стр. яндекса'));
+autoFocusToggle.appendChild(document.createTextNode("Автофокус на поле выдачи яндекс"));
 
-buttonsContainer.appendChild(autoFocusToggle);
 // Получаем значение при инициализации
 const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
 autoFocusCheckbox.checked = savedState;
@@ -601,6 +622,7 @@ autoFocusCheckbox.addEventListener('change', () => {
         title.appendChild(versionLabel);
 
         // Собираем статистику
+        breakStat.appendChild(autoFocusToggle);
         breakStat.appendChild(breakValue);
         breakStat.appendChild(breakLabel);
         avitoStat.appendChild(avitoValue);
@@ -624,8 +646,10 @@ autoFocusCheckbox.addEventListener('change', () => {
         // Собираем структуру
 
         buttonsContainer.appendChild(Priemyan);
+        buttonsContainer.appendChild(docs);
         buttonsContainer.appendChild(openBarcodeWindowBtn);
         header.appendChild(title);
+        header.appendChild(brihgt);
         header.appendChild(buttonsContainer);
 
         container.appendChild(header);
@@ -642,8 +666,6 @@ autoFocusCheckbox.addEventListener('change', () => {
                                          (item.date && item.date.startsWith(selectedDate))
                                         );
         }
-
-
         // Функция для определения типа команды
         function getCommandType(command) {
             if (/^\d{10}$/.test(command)) {
@@ -652,31 +674,6 @@ autoFocusCheckbox.addEventListener('change', () => {
                 : 'АВИТОВЫДАЧА';
             }
             return 'ЯНДЕКС';
-        }
-
-
-
-        // Функция для подсчета статистики
-        function calculateStats() {
-            const stats = {
-                avito: 0,
-                avito1: 0,
-                yandex: 0,
-                total: commandHistory.length
-            };
-
-            commandHistory.forEach(item => {
-                const type = item.type || getCommandType(item.command);
-                if (type === 'АВИТОВЫДАЧА') {
-                    stats.avito++;
-                } else if (type === 'АВИТОПРИЕМКА') {
-                    stats.avito1++;
-                } else {
-                    stats.yandex++;
-                }
-            });
-
-            return stats;
         }
         function calculateStatsByDate() {
             const stats = {
@@ -707,7 +704,6 @@ autoFocusCheckbox.addEventListener('change', () => {
 
             return stats;
         }
-
         function calculateMaxBreak() {
             // Получаем отфильтрованную историю по дате (если выбрана)
             let data = commandHistory;
@@ -750,7 +746,6 @@ autoFocusCheckbox.addEventListener('change', () => {
 
             return max;
         }
-
         function formatTimeRange(fromItem, toItem) {
             const from = new Date(fromItem.date);
             const to = new Date(toItem.date);
@@ -789,8 +784,6 @@ autoFocusCheckbox.addEventListener('change', () => {
                 breakLabel.textContent = 'Макс. перерыв';
             }
         }
-
-
         function loadBarcodeLibrary(callback) {
             if (window.JsBarcode) return callback();
 
@@ -802,7 +795,7 @@ autoFocusCheckbox.addEventListener('change', () => {
         // Функция для обновления отображения истории
         let delbtn = false;
         function updateHistoryDisplay() {
-
+const now = Date.now();
             // применяем сортировку + фильтр ТОЛЬКО для отображения
             const visibleItems = [...getVisibleHistory()]
             .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
@@ -821,16 +814,37 @@ autoFocusCheckbox.addEventListener('change', () => {
             let historyHTML = '';
 
             visibleItems.forEach((item) => {
+                const isHighlighted = item.highlightUntil && item.highlightUntil > now;
                 const time = item.time || '';
                 const command = item.command || '';
                 const type = item.type || getCommandType(command);
 
                 historyHTML += `
-            <div class="history-item">
+            <div class="history-item ${isHighlighted ? 'history-new' : ''}">
                 <div class="history-content">
                     <span class="history-time">${time}</span>
                     <span class="history-command">${command}</span>
-                    <span class="history-type">${type}</span>
+                    <!-- <span class="history-type">${type}</span>-->
+                    ${
+    type === 'ЯНДЕКС'
+        ? `<svg width="150" height="30" viewBox="0 0 204 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="150" height="30" viewBox="0 0 204 30" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_9407_22851)"><circle cx="15" cy="15" r="15" fill="#FF5226"></circle><path d="M17.43 24.45V8.39h-1.884c-1.358 0-2.388.288-3.088.865-.7.556-1.05 1.297-1.05 2.224 0 .7.123 1.297.37 1.791s.608.947 1.081 1.359c.474.412 1.071.865 1.792 1.359l1.791 1.204-5.25 7.259H7.238l5.004-6.795 2.347 2.1-1.853-1.174a23.446 23.446 0 01-2.656-2.007c-.742-.66-1.308-1.38-1.699-2.162-.391-.783-.587-1.699-.587-2.749 0-1.812.649-3.274 1.946-4.386 1.318-1.132 3.243-1.698 5.775-1.698h5.59v18.87H17.43z" fill="#fff"></path></g><path d="M47.555 30c-8.275 0-15-6.699-15-14.973C32.555 6.752 39.28 0 47.555 0c8.274 0 15 6.752 15 15.027 0 8.274-6.726 14.973-15 14.973z" fill="#FF5226"></path><path d="M45.232 2.03L28.498 28.14h7.671l9.667-15.05-.236-.107-2.68 10.77 5.674 1 5.832-7.33-.316-.157-1.97 8.326 12.363-2.356-2.522-4.154-4.456 1.02.526.605 2.075-8.695-4.834-3.232-6.33 7.96.315.158 2.6-10.43-6.645-4.438z" fill="#FD0"></path><path d="M45.232 2.03L28.498 28.14h7.671l9.667-15.05-.236-.107-2.68 10.77 5.674 1 5.832-7.33-.316-.157-1.97 8.326 4.97-.947 3.016-12.633-4.834-3.232-6.33 7.96.315.158 2.6-10.43-6.645-4.438z" fill="#FD0"></path><path d="M68.305 24.45l9.327-18.87h7.103l1.452 11.489 7.196-11.49h7.042V24.45h-6.887V14.32l-6.394 10.13h-6.887L78.93 14.227 73.864 24.45h-5.56zm53.276-3.737c0 .639.011 1.267.031 1.884.021.618.062 1.225.124 1.822h-6.394a5.371 5.371 0 01-.37-.926 6.529 6.529 0 01-.247-1.297c-.659.782-1.493 1.43-2.502 1.945-.988.495-2.399.742-4.231.742-1.853 0-3.336-.433-4.448-1.297-1.091-.865-1.636-2.018-1.636-3.46 0-1.338.38-2.367 1.142-3.088.783-.741 1.997-1.256 3.645-1.544 1.647-.31 3.757-.464 6.331-.464h1.606v-.34c0-.658-.278-1.163-.834-1.513-.556-.35-1.596-.525-3.119-.525-1.503 0-2.903.196-4.201.587-1.276.37-2.316.741-3.119 1.112v-4.139c.906-.33 2.121-.659 3.645-.988 1.544-.35 3.304-.525 5.281-.525 1.997 0 3.685.185 5.065.556 1.38.35 2.43.957 3.15 1.822.721.844 1.081 2.018 1.081 3.521v6.115zm2.1-11.55h6.394l.37 2.624c.783-1.029 1.719-1.78 2.811-2.254 1.091-.474 2.347-.71 3.768-.71 1.606 0 3.047.288 4.324.864a6.824 6.824 0 013.026 2.626c.742 1.173 1.112 2.656 1.112 4.447s-.37 3.284-1.112 4.478c-.72 1.174-1.729 2.06-3.026 2.656-1.298.598-2.78.896-4.448.896a9.387 9.387 0 01-3.49-.649c-1.071-.452-1.997-1.163-2.779-2.13v6.424h-6.95V9.162zm41.942 7.597c0-1.524.412-2.883 1.236-4.077.844-1.194 2.038-2.13 3.582-2.81 1.565-.7 3.408-1.05 5.529-1.05 2.203 0 4.046.38 5.528 1.142 1.503.762 2.553 1.843 3.15 3.243.618 1.4.7 3.058.247 4.973h-12.199c.247.885.793 1.554 1.637 2.007.865.433 2.141.649 3.829.649 1.174 0 2.265-.103 3.274-.31a29.001 29.001 0 002.811-.771v3.675c-.886.412-1.874.741-2.965.988-1.071.247-2.481.371-4.231.371-3.851 0-6.723-.71-8.617-2.131-1.874-1.441-2.811-3.408-2.811-5.9zm19.859-7.598h17.636v3.954h-5.498v11.303h-6.949V13.116h-5.189V9.162zm-38.668 0h6.949v6.918l6.579-6.918h5.992l-6.116 6.362 7.382 8.895h-8.401l-5.436-6.733v6.733h-6.949V9.162zm29.187 3.12c-.948 0-1.699.278-2.255.834-.556.535-.916 1.225-1.081 2.069h6.115c-.02-.844-.247-1.534-.679-2.07-.433-.555-1.133-.833-2.1-.833zm-37.618 4.478c0-1.236-.34-2.214-1.02-2.934-.658-.741-1.606-1.112-2.841-1.112-1.132 0-2.08.35-2.841 1.05-.762.68-1.143 1.678-1.143 2.996s.37 2.337 1.112 3.058c.762.7 1.719 1.05 2.872 1.05 1.277 0 2.234-.371 2.872-1.112.659-.741.989-1.74.989-2.996zm-23.751 1.08h-1.575c-1.503 0-2.584.125-3.243.372-.638.247-.957.72-.957 1.42 0 .597.206 1.04.617 1.328.433.268.947.402 1.545.402.906 0 1.647-.165 2.223-.494.597-.35 1.061-.752 1.39-1.205v-1.822z" fill="currentColor"></path><defs><clipPath id="clip0_9407_22851"><path fill="#fff" d="M0 0h30v30H0z"></path></clipPath></defs></svg>
+
+  </svg>`
+        : ''
+}
+  ${type === 'АВИТОПРИЕМКА' || type === 'АВИТОВЫДАЧА'
+            ? `<img
+        src="https://pvz.avito.ru/baas-static/ee3de440-b0d4-459f-a38a-e2dcb617055b/static/abd-ui/assets/09948ed4b331c509.svg"
+        alt="QR"
+        style="width:60px; height:30px; margin-left:5px; vertical-align:middle;">
+    `
+                        : ''
+    }
+                          ${/^\d{12}$/.test(command)
+  ? `<span class="history-time">QR НА ВЫДАЧУ, для приемки нужен его номер. Кнопка "ПРИЕМКА Яндекс (Водители/Продавцы)"</span>`
+  : ''
+}
                 </div>
                 <div class="history-actions">
 
@@ -839,13 +853,12 @@ autoFocusCheckbox.addEventListener('change', () => {
                         : ''
     }
 
-              ${/^53\d{19}(-\d)?$/.test(command)
-  ? `<text  class="texth-btn" data-command="${command}">Возможно приемка продавца</text>`
-  : ''
-}
-
                   ${/^LO-\d{9}$/.test(command)
   ? `<button class="gz-btn" data-command="${command}">Поиск по грузоместу</button>`
+  : ''
+}
+                  ${/^P\d{10}$/.test(command)
+  ? `<button class="gzp-btn" data-command="${command}">Поиск по грузоместу</button>`
   : ''
 }
                 ${/^\d{6}-\d{6}$/.test(command)
@@ -855,7 +868,8 @@ autoFocusCheckbox.addEventListener('change', () => {
 
                    ${type === 'ЯНДЕКС'
   ? `
-    ${!/^LO-\d{9}-\d{5}$/.test(command)
+    ${! /^(?:LO-\d{9}-\d{5}|\d{12})$/i.test(command)
+
       ? `<button class="yanbt-btn" data-command="${command}">Отправить</button>`
       : ''
     }
@@ -873,7 +887,7 @@ autoFocusCheckbox.addEventListener('change', () => {
                     <button class="copy-btn" data-command="${command}">Копировать</button>
 
 
-                    ${delbtn == true
+                    ${delbtn == true || /^\d{1,3}$/.test(command)
             ? `<button class="del-btn" data-command="${command}">🗑️</button>`
                         : ''
     }
@@ -888,19 +902,6 @@ autoFocusCheckbox.addEventListener('change', () => {
             contentArea.querySelectorAll('.del-btn').forEach(button => {
                 button.addEventListener('click', async function () {
                     const command = this.getAttribute('data-command');
-
-                    const password = prompt('Введите пароль для удаления:');
-                    if (!password) {
-                        showStatus('Удаление отменено', '#e74c3c');
-                        return;
-                    }
-
-                    const ok = await checkPassword(password);
-                    if (!ok) {
-                        showStatus('Неверный пароль', '#e74c3c');
-                        return;
-                    }
-
                     const index = commandHistory.findIndex(i => i.command === command);
                     if (index !== -1) {
                         commandHistory.splice(index, 1);
@@ -917,7 +918,6 @@ autoFocusCheckbox.addEventListener('change', () => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
                     copyToClipboard(command);
-                    showStatus(`Скопировано: ${command}`, '#27ae60');
                 });
             });
 
@@ -926,7 +926,6 @@ autoFocusCheckbox.addEventListener('change', () => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
                     window.open(`https://pvz.avito.ru/history/${command}`, '_blank');
-                    showStatus(`Открыта накладная: ${command}`, '#ff9500');
                 });
             });
 
@@ -934,38 +933,47 @@ autoFocusCheckbox.addEventListener('change', () => {
             contentArea.querySelectorAll('.yanbt-btn').forEach(button => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
-                    showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
-                    // Копируем в буфер обмена
                     copyToClipboard(command);
-                    openOrFocusYandexPvzpri();
+                     return openOrFocusWindowrec('yandex_pvz_deliver_tab_pri',
+                                             `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request?query=${command}`
+                                            );
                 });
             });
 
             contentArea.querySelectorAll('.yan-btn').forEach(button => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
-                    showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
-                    // Копируем в буфер обмена
                     copyToClipboard(command);
-                    openOrFocusYandexPvz();
+                    return openOrFocusWindow('yandex_pvz_deliver_tab',
+                                             `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`
+                                            );
                 });
             });
             contentArea.querySelectorAll('.gz-btn').forEach(button => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
-                    showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
-                    // Копируем в буфер обмена
                     copyToClipboard(command);
-                    openOrFocusYandexgz(command);
+                    return openOrFocusWindow('yandex_pvz_deliver_gz',
+                                             `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/dropoff-orders/${command}`
+                                            );
                 });
             });
             contentArea.querySelectorAll('.gza-btn').forEach(button => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
-                    showStatus(`Команда ЯНДЕКС: ${command} (скопировано)`, '#27ae60');
-                    // Копируем в буфер обмена
                     copyToClipboard(command);
-                    openOrFocusYandexgza(command);
+                   return openOrFocusWindow('yandex_pvz_deliver_gz',
+                                            `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables?sortableTypes=all&sortableStatuses=&sortableStatusesLeafs=&sortableBarcode=${command}&outboundIdTitle=&groupingDirectionId=&groupingDirectionName=`
+                                            );
+                });
+            });
+             contentArea.querySelectorAll('.gzp-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const command = this.getAttribute('data-command');
+                    copyToClipboard(command);
+                    return openOrFocusWindow('yandex_pvz_deliver_gz',
+                                             `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables?sortableBarcode=${command}`
+                                            );
                 });
             });
 
@@ -1012,7 +1020,6 @@ JsBarcode("#barcode","${command}",{
 
 
             win.document.close();
-            showStatus(`Штрихкод сгенерирован: ${command}`, '#8e44ad');
         });
     });
             contentArea.querySelectorAll('.barcodeqr-btn').forEach(button => {
@@ -1059,7 +1066,6 @@ new QRCode(document.getElementById("qrcode"), {
         `);
 
         win.document.close();
-        showStatus(`QR-код сгенерирован: ${command}`, '#8e44ad');
     });
 });
 
@@ -1071,15 +1077,26 @@ new QRCode(document.getElementById("qrcode"), {
         });
 
         // Функция для отображения статуса
-        function showStatus(message, color = '#666') {
-            status.style.display = ''
-            status.textContent = message;
-            status.style.color = color;
-            setTimeout(() => {
-                status.style.color = '#666';
-                status.style.display = 'none'
-            }, 10000);
-        }
+       function showStatus(message, color = '#666', bgColor = '#fff') {
+    status.style.display = 'inline-block';
+    status.style.color = color;
+    status.style.backgroundColor = bgColor;
+    status.style.fontSize = '20px';
+    status.style.padding = '5px 10px';
+    status.style.borderRadius = '4px';
+    status.style.transition = 'all 0.5s';
+    status.textContent = message;
+
+    // через 10 секунд сброс
+    setTimeout(() => {
+        status.style.color = '#666';
+        status.style.backgroundColor = '#fff';
+        status.style.display = 'none';
+        updateHistoryDisplay();
+    }, 10000);
+}
+
+
 
         // Функция для копирования в буфер обмена
         async function copyToClipboard(text) {
@@ -1114,15 +1131,6 @@ new QRCode(document.getElementById("qrcode"), {
             const windowName = 'avito_pvz_deliver_tab';
             const url = 'https://pvz.avito.ru/deliver/scan/'+text+'/'+text;
             const tab = window.open('', windowName);
-            /*if (tab && !tab.closed) {
-            tab.focus();
-            try {
-                if (!tab.location.href.includes('https://pvz.avito.ru/deliver/scan/'+text+'/'+text)) {
-                    tab.location.href = url;
-                }
-            } catch (e) {}
-            return tab;
-        }*/
             return window.open(url, windowName);
         }
 
@@ -1130,78 +1138,25 @@ new QRCode(document.getElementById("qrcode"), {
             const windowName = 'avitopriem_pvz_deliver_tab';
             const url = 'https://pvz.avito.ru/accept/parcel/'+text;
             const tab = window.open('', windowName);
-            /*if (tab && !tab.closed) {
-            tab.focus();
-            try {
-                if (!tab.location.href.includes('https://pvz.avito.ru/accept/parcel/'+text)) {
-                    tab.location.href = url;
-                }
-            } catch (e) {}
-            return tab;
-        }*/
             return window.open(url, windowName);
         }
+        function openOrFocusWindowrec(windowName, url) {
+            const tab = window.open('', windowName);
+            return window.open(url, windowName);
+        }
+        function openOrFocusWindow(windowName, url) {
+            const tab = window.open('', windowName);
 
-        function openOrFocusYandexPvz() {
-            const windowName = 'yandex_pvz_deliver_tab';
-            const url = `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`;
-            const tab = window.open('', windowName);
             if (tab && !tab.closed) {
                 tab.focus();
                 try {
-                    if (!tab.location.href.includes(`https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`)) {
+                    if (tab.location.href !== url) {
                         tab.location.href = url;
                     }
                 } catch (e) {}
                 return tab;
             }
-            return window.open(url, windowName);
-        }
-        function openOrFocusYandexgz(comm) {
-            //https://logistics.market.yandex.ru/tpl-outlet/148822177/dropoff-orders/LO-780247597
-            const windowName = 'yandex_pvz_deliver_gz';
-            const url = `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/dropoff-orders/${comm}`;
-            const tab = window.open('', windowName);
-            if (tab && !tab.closed) {
-                tab.focus();
-                try {
-                    if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/dropoff-orders/${comm}`)) {
-                        tab.location.href = url;
-                    }
-                } catch (e) {}
-                return tab;
-            }
-            return window.open(url, windowName);
-        }
-        function openOrFocusYandexgza(comm) {
-            //https://logistics.market.yandex.ru/tpl-outlet/148822177/dropoff-orders/LO-780247597
-            const windowName = 'yandex_pvz_deliver_gz';
-            const url = `https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables?sortableTypes=all&sortableStatuses=&sortableStatusesLeafs=&sortableBarcode=${comm}&outboundIdTitle=&groupingDirectionId=&groupingDirectionName=`;
-            const tab = window.open('', windowName);
-            if (tab && !tab.closed) {
-                tab.focus();
-                try {
-                    if (!tab.location.href.includes(`https://logistics.market.yandex.ru/tpl-outlet/${UID_YA}/sortables?sortableTypes=all&sortableStatuses=&sortableStatusesLeafs=&sortableBarcode=${comm}&outboundIdTitle=&groupingDirectionId=&groupingDirectionName=`)) {
-                        tab.location.href = url;
-                    }
-                } catch (e) {}
-                return tab;
-            }
-            return window.open(url, windowName);
-        }
-        function openOrFocusYandexPvzpri() {
-            const windowName = 'yandex_pvz_deliver_tab_pri';
-            const url = `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request`;
-            const tab = window.open('', windowName);
-            if (tab && !tab.closed) {
-                tab.focus();
-                try {
-                    if (!tab.location.href.includes(`https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/acceptance-request`)) {
-                        tab.location.href = url;
-                    }
-                } catch (e) {}
-                return tab;
-            }
+
             return window.open(url, windowName);
         }
 
@@ -1216,74 +1171,106 @@ new QRCode(document.getElementById("qrcode"), {
         };
 
         // Функция для обработки ввода
-        function processInput() {
-            const text = input.value.trim();
+        function isDuplicateCommand(command) {
+    return commandHistory.some(item => item.command === command);
+}
 
-            if (!text) {
-                showStatus('Пожалуйста, введите команду', '#e74c3c');
-                return;
-            } else if(text == "lfnf"){
-                buttonsContainer.appendChild(dateFilter);
-                showStatus('Пожалуйста', '#666');
-                input.value = '';
-                return;
-            } else if(text == "del"){
-                delbtn = !delbtn;
-                updateHistoryDisplay();
-                showStatus('Пожалуйста', '#666');
-                input.value = '';
-                return;
+       function processInput() {
+    const text = input.value.trim();
+
+contentArea.scrollTop = 0;
+    if (!text) {
+        showStatus('Поле пустое!', '#e74c3c');
+        return;
+    }
+
+    // Служебные команды
+    if (text === 'lfnf') {
+        buttonsContainer.appendChild(dateFilter);
+        input.value = '';
+        return;
+    }
+
+    if (text === 'del') {
+        delbtn = !delbtn;
+        updateHistoryDisplay();
+        input.value = '';
+        return;
+    }
+
+    // ⚠️ Проверка на дубликат
+const existingItem = commandHistory.find(item => item.command === text);
+if (existingItem) {
+    // подсветка на 20 секунд
+    existingItem.highlightUntil = Date.now() + 10_000;
+
+    showStatus('⚠️ Такая команда уже была!', '#fff', '#FF5555');
+    input.value = '';
+    updateHistoryDisplay(); // обновляем, чтобы подсветка появилась
+    return;
+}
+
+
+    const commandType = getCommandType(text);
+
+    // Добавляем в историю
+    const now = Date.now();
+const highlightDuration = 5000; // подсветка 5 секунд
+
+const historyItem = {
+    time: new Date().toLocaleTimeString(),
+    command: text,
+    type: commandType,
+    date: new Date().toISOString(),
+    highlightUntil: now + highlightDuration // <--- новая подсветка
+};
+
+
+    commandHistory.push(historyItem);
+
+    // Ограничиваем историю
+    if (commandHistory.length > 100) {
+        commandHistory = commandHistory.slice(-100);
+    }
+
+    GM_setValue('commandHistory', commandHistory);
+    historyIndex = commandHistory.length;
+
+    updateStatsDisplay();
+    updateHistoryDisplay();
+
+    copyToClipboard(text);
+
+    // Обработка команд
+    switch (commandType) {
+        case 'АВИТОВЫДАЧА':
+            openOrFocusAvitoPvz(text);
+            break;
+
+        case 'АВИТОПРИЕМКА':
+            openOrFocusAvitoPiemk(text);
+            break;
+
+        case 'ЯНДЕКС':
+            if (/^(?:LO-\d{9}-\d{5}|\d{12})$/i.test(text)) {
+                openOrFocusWindow(
+                    'yandex_pvz_deliver_tab',
+                    `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`
+                );
             }
-            // Определяем тип команды
-            const commandType = getCommandType(text);
+            break;
 
-            // Добавляем в историю
-            const timestamp = new Date().toLocaleTimeString();
-            const historyItem = {
-                time: timestamp,
-                command: text,
-                type: commandType,
-                date: new Date().toISOString()
-            };
+        default:
+            // ничего не делаем
+            break;
+    }
 
-            commandHistory.push(historyItem);
+    input.value = '';
+    input.focus();
+    setInterval(() => updateHistoryDisplay(), 10000);
 
-            // Сохраняем историю (ограничиваем размер, например, последние 100 команд)
-            if (commandHistory.length > 100) {
-                commandHistory = commandHistory.slice(-100);
-            }
+}
 
-            GM_setValue('commandHistory', commandHistory);
-            historyIndex = commandHistory.length;
-
-            // Обновляем отображение
-            updateStatsDisplay();
-            updateHistoryDisplay();
-
-            // Копируем в буфер обмена
-            copyToClipboard(text);
-
-            // Ваша логика обработки команд
-            if (commandType === 'АВИТОВЫДАЧА') {
-                showStatus(`Команда АВИТОВЫДАЧА: ${text} (скопировано)`, '#27ae60');
-                openOrFocusAvitoPvz(text);
-            } else if (commandType === 'АВИТОПРИЕМКА') {
-                showStatus(`Команда АВИТОПРИЕМКА: ${text} (скопировано)`, '#27ae60');
-                openOrFocusAvitoPiemk(text);
-            } else if(commandType === 'ЯНДЕКС'){
-                if(/^LO-\d{9}-\d{5}$/.test(text)){
-                    openOrFocusYandexPvz();
-                }
-            } else {
-            //showStatus(`Команда ЯНДЕКС: ${text} (скопировано)`, '#27ae60');
-                //openOrFocusYandexPvz();
-            }
-
-
-            // Очищаем поле ввода
-            input.value = '';
-            input.focus();
-        }
 
         // Обработчики событий
         input.addEventListener('keypress', function(event) {
@@ -1365,6 +1352,91 @@ new QRCode(document.getElementById("qrcode"), {
             openOrPriemYandexPvz();
 
         });
+      docs.addEventListener('click', function () {
+    const text = input.value.trim();
+
+    // Открываем новое окно
+    const win = window.open(
+        '',
+        'barcode_generator',
+        `width=${screen.width},height=${screen.height},left=0,top=0,resizable=yes,scrollbars=yes`
+    );
+
+    // Записываем HTML содержимое в новое окно
+    win.document.write(`
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Выбор действия</title>
+<style>
+    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    button { margin: 10px; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; }
+    .action1 { background-color: #4CAF50; color: white; border: none; }
+    .action2 { background-color: #4CAF50; color: white; border: none; }
+    .action3 { background-color: #4CAF50; color: white; border: none; }
+    .action4 { background-color: #4CAF50; color: white; border: none; }
+    .action5 { background-color: #4CAF50; color: white; border: none; }
+    .close { background-color: #f44336; color: white; border: none; }
+</style>
+</head>
+<body>
+<h2>Бумажная форма</h2>
+
+<ul>
+  <li>Приём и отказ от посылок Авито</li>
+  <li>Выдача возврата Авито по паспорту</li>
+  <li>
+    Если посылка не числится в системе
+    <small>(например, из-за смены юридического лица)</small>
+  </li>
+  <li>Если ЭАПП завис или не работает</li>
+  <li>
+    Если возникла особая ситуация, которую нельзя зафиксировать электронным актом,
+    либо по согласованию со службой поддержки
+  </li>
+</ul>
+
+<button class="action1">Приёмка у курьера Маркета — Акт приёма-передачи №3</button>
+<button class="action2">Приёмка заказа у клиента Авито и Яндекс Доставки — Акт приёма-передачи</button>
+<button class="action3">Приёмка заказов у продавца Маркета — Акт приёма-передачи</button>
+<button class="action4">Расхождения по итогу размещения заказов — Акт об установленном расхождении (№4)</button>
+<button class="action5">
+Расхождения на выдаче клиенту — Акт об обнаружении повреждений/недостатков отправления (№5)</button>
+<button class="close">Закрыть</button>
+<script>
+    document.querySelector('.action1').onclick = function() {
+    window.open('https://new-acc-space-1143.ispring.ru/app/preview/65a7b1c2-eaed-11ef-9f34-72081ce363cf', '_blank');
+        window.close();
+    };
+    document.querySelector('.action2').onclick = function() {
+         window.open('https://new-acc-space-1143.ispring.ru/app/preview/6e3a6334-eae3-11ef-8d5c-b25e5b0cd9c5', '_blank');
+        window.close();
+    };
+    document.querySelector('.action3').onclick = function() {
+        window.open('https://new-acc-space-1143.ispring.ru/app/preview/6e714494-eae3-11ef-9fc3-72081ce363cf', '_blank');
+        window.close();
+    };
+    document.querySelector('.action4').onclick = function() {
+        window.open('https://new-acc-space-1143.ispring.ru/app/preview/7ceafbea-eada-11ef-8bdd-92c9dee5d041', '_blank');
+        window.close();
+    };
+    document.querySelector('.action5').onclick = function() {
+        window.open('https://new-acc-space-1143.ispring.ru/app/preview/7d2734f2-eada-11ef-ac5c-5682b99ceced', '_blank');
+        window.close();
+    };
+    document.querySelector('.close').onclick = function() {
+        window.close();
+    };
+</script>
+</body>
+</html>
+    `);
+
+    // Обязательно закрываем поток записи документа
+    win.document.close();
+});
+
 
         function openOrPriemYandexPvz() {
             const windowName = 'yandex_pvz_prei';
