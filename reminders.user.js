@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      5.0
+// @version      5.1
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -464,7 +464,6 @@
 
 
 
-
         // Загружаем историю из сохраненных данных
         let commandHistory = GM_getValue('commandHistory', []);
        // let selectedDate = null; // YYYY-MM-DD или null
@@ -548,6 +547,10 @@ const docs = document.createElement('button');
         const statsContainer = document.createElement('div');
         statsContainer.className = 'stats-container';
        statsContainer.style.background = 'transparent';
+ const StatEnabled = GM_getValue('bgBlurEnabled', true);
+statsContainer.style.display = StatEnabled ? 'flex' : 'none';
+
+
 
         // Статистика для АВИТО
         const avitoStat = document.createElement('div');
@@ -836,19 +839,20 @@ const now = Date.now();
             }
 
             let historyHTML = '';
-const savedButtonOpacity = GM_getValue('bgOpacitybut', 0.9);
+            const savedButtonOpacity = GM_getValue('bgOpacitybut', 0.9);
+            const savedButtonblur = GM_getValue('bgOpacityrazm', 20);
             visibleItems.forEach((item) => {
                 const isHighlighted = item.highlightUntil && item.highlightUntil > now;
                 const time = item.time || '';
                 const command = item.command || '';
                 const type = item.type || getCommandType(command);
                 const bg = isHighlighted
-  ? 'linear-gradient(rgba(46,204,113,0.25), rgba(46,204,113,0.25))' // подсветка
+  ? 'linear-gradient(rgba(46,204,113,0.25), rgba(46,204,113,0.25))'
   : `linear-gradient(rgba(255,255,255,${savedButtonOpacity}), rgba(255,255,255,${savedButtonOpacity}))`;
 
                 historyHTML += `
-              <div class="history-item ${isHighlighted ? 'history-new' : ''}"
-       style="background:  ${bg}">
+               <div class="history-item ${isHighlighted ? 'history-new' : ''}"
+       style="background: ${bg}; backdrop-filter: blur(${savedButtonblur}px); -webkit-backdrop-filter: blur(${savedButtonblur}px);">
 
                 <div class="history-content">
                     <span class="history-time">${time}</span>
@@ -869,13 +873,11 @@ const savedButtonOpacity = GM_getValue('bgOpacitybut', 0.9);
         : ''
 }
   ${type === 'АВИТОПРИЕМКА' || type === 'АВИТОВЫДАЧА'
-            ? `<img
-        src="https://pvz.avito.ru/baas-static/ee3de440-b0d4-459f-a38a-e2dcb617055b/static/abd-ui/assets/09948ed4b331c509.svg"
-        alt="QR"
-        style="width:60px; height:30px; margin-left:5px; vertical-align:middle;">
-    `
-                        : ''
-    }
+        ? `<svg width="150" height="30" viewBox="0 0 204 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="97" height="27" fill="none"><g clip-path="url(#a)"><path fill="#000" d="m36.552 1.077-8.26 21.566h4.437l1.698-4.506h8.764l1.705 4.506H49.3L41.091 1.077h-4.539ZM35.95 14.18l2.885-7.588 2.873 7.588H35.95ZM54.602 17.082 51.02 7.493h-4.232l5.77 15.15h4.195l5.667-15.15h-4.232l-3.586 9.59ZM67.744 7.493h-4.028v15.15h4.028V7.494ZM65.728 6.401a2.936 2.936 0 1 0 0-5.871 2.936 2.936 0 0 0 0 5.871ZM75.727 3.45H71.71v4.018h-2.355v3.651h2.355v6.438c0 3.652 2.012 5.222 4.845 5.222a6.938 6.938 0 0 0 2.787-.544V18.48a4.494 4.494 0 0 1-1.501.274c-1.23 0-2.118-.479-2.118-2.118v-5.518h3.619V7.504h-3.615V3.451ZM87.81 7.22a7.851 7.851 0 1 0-.007 15.702 7.851 7.851 0 0 0 .007-15.703Zm0 11.684a3.823 3.823 0 1 1 3.82-3.823 3.816 3.816 0 0 1-3.82 3.809v.014Z"/><path fill="#04E061" d="M7.85 24.794a7.85 7.85 0 1 0 0-15.702 7.85 7.85 0 0 0 0 15.702Z"/><path fill="#FF4053" d="M21.468 23.805a4.743 4.743 0 1 0 0-9.487 4.743 4.743 0 0 0 0 9.487Z"/><path fill="#965EEB" d="M9.352 8.074a2.936 2.936 0 1 0 0-5.872 2.936 2.936 0 0 0 0 5.872Z"/><path fill="#0AF" d="M19.624 13.296a6.383 6.383 0 1 0 0-12.766 6.383 6.383 0 0 0 0 12.766Z"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 .53h96.177V27H0z"/></clipPath></defs></svg>
+        </svg>`
+        : ''
+}
                           ${/^\d{12}$/.test(command)
   ? `<span class="history-time">QR НА ВЫДАЧУ, для приемки нужен его номер. Кнопка "ПРИЕМКА Яндекс (Водители/Продавцы)"</span>`
   : ''
@@ -1527,6 +1529,30 @@ function updateBackgroundbutton(opacity = 0.9) {
 
  document.querySelectorAll('.history-item').forEach(el => { el.style.background = linear;});
 }
+function updateBackgroundrazm(blur = 100) {
+
+
+    function applyBlur(el) {
+        if (!el) return;
+        el.style.backdropFilter = `blur(${blur}px)`;
+        el.style.webkitBackdropFilter = `blur(${blur}px)`;
+    }
+
+    // Кнопки
+    applyBlur(docs);
+    applyBlur(openBarcodeWindowBtn);
+    applyBlur(Priemyan);
+    applyBlur(settingsz);
+
+    // Статистика
+    applyBlur(yandexStat);
+    applyBlur(avitoStat);
+    applyBlur(avitoStat1);
+    applyBlur(breakStat);
+
+    // История
+    document.querySelectorAll('.history-item').forEach(applyBlur);
+}
 
 
        settingsz.addEventListener('click', () => {
@@ -1558,18 +1584,32 @@ function updateBackgroundbutton(opacity = 0.9) {
     `;
     document.body.appendChild(overlay);
 
-    // Заголовок
-    const settingsTitle = document.createElement('div');
-    settingsTitle.textContent = 'Настройки фона';
-    settingsTitle.style.fontWeight = '600';
-    settingsTitle.style.fontSize = '16px';
-    settingsModal.appendChild(settingsTitle);
+   // Заголовок
+const settingsTitle = document.createElement('div');
+settingsTitle.textContent = 'Настройки';
+settingsTitle.style.fontWeight = '600';
+settingsTitle.style.fontSize = '16px';
+settingsTitle.style.width = '100%';
+settingsTitle.style.textAlign = 'center';
+settingsModal.appendChild(settingsTitle);
 
-    // Выбор изображения
     const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    settingsModal.appendChild(fileInput);
+fileInput.type = 'file';
+fileInput.accept = 'image/*';
+fileInput.style.display = 'none';
+
+// Кастомная кнопка
+const fileBtn = document.createElement('button');
+fileBtn.type = 'button';
+fileBtn.className = 'action-button';
+           fileBtn.style.width = 'fit-content';
+fileBtn.style.padding = '6px 12px';
+fileBtn.textContent = 'Выбрать фон';
+
+// Клик по кнопке открывает file input
+fileBtn.addEventListener('click', () => {
+    fileInput.click();
+});
 
     // Прозрачность
     const opacityLabel = document.createElement('label');
@@ -1594,8 +1634,39 @@ function updateBackgroundbutton(opacity = 0.9) {
     opacityInput1.style.verticalAlign = 'middle';
     opacityLabel1.appendChild(opacityInput1);
 
+    const opacityLabel2 = document.createElement('label');
+    opacityLabel2.textContent = 'Размытие кнопок: ';
+    const opacityInput2 = document.createElement('input');
+    opacityInput2.type = 'range';
+    opacityInput2.min = 0;
+    opacityInput2.max = 20;
+    opacityInput2.step = 0.25;
+    opacityInput2.value = GM_getValue('bgOpacityrazm', 20);
+    opacityInput2.style.verticalAlign = 'middle';
+    opacityLabel2.appendChild(opacityInput2);
+// Чекбокс: включить размытие
+const blurToggleLabel = document.createElement('label');
+blurToggleLabel.style.display = 'flex';
+blurToggleLabel.style.alignItems = 'center';
+blurToggleLabel.style.gap = '8px';
+
+const blurToggle = document.createElement('input');
+blurToggle.type = 'checkbox';
+blurToggle.checked = GM_getValue('bgBlurEnabled', true);
+
+const blurToggleText = document.createElement('span');
+blurToggleText.textContent = 'Включить статистику';
+
+blurToggleLabel.appendChild(blurToggle);
+blurToggleLabel.appendChild(blurToggleText);
+
+           // Добавляем в модалку
+settingsModal.appendChild(fileBtn);
+settingsModal.appendChild(fileInput);
+settingsModal.appendChild(blurToggleLabel);
     settingsModal.appendChild(opacityLabel);
     settingsModal.appendChild(opacityLabel1);
+    settingsModal.appendChild(opacityLabel2);
 
     // Кнопка применить
     const applyBtn = document.createElement('button');
@@ -1615,8 +1686,11 @@ function updateBackgroundbutton(opacity = 0.9) {
                 GM_setValue('bgImage', base64);
                 GM_setValue('bgOpacity', opacityInput.value);
                 GM_setValue('bgOpacitybut', opacityInput1.value);
+                GM_setValue('bgOpacityrazm', opacityInput2.value);
+                GM_setValue('bgBlurEnabled', blurToggle.checked);
                 updateBackground(base64, opacityInput.value);
                 updateBackgroundbutton(opacityInput1.value)
+                updateBackgroundrazm(opacityInput2.value);
                 settingsModal.remove();
                 overlay.remove();
             };
@@ -1624,12 +1698,18 @@ function updateBackgroundbutton(opacity = 0.9) {
         } else {
             GM_setValue('bgOpacity', opacityInput.value);
             GM_setValue('bgOpacitybut', opacityInput1.value);
+            GM_setValue('bgOpacityrazm', opacityInput2.value);
+            GM_setValue('bgBlurEnabled', blurToggle.checked);
             const savedImage = GM_getValue('bgImage', null);
             if (savedImage) updateBackground(savedImage, opacityInput.value);
             updateBackgroundbutton(opacityInput1.value)
+            updateBackgroundrazm(opacityInput2.value);
             settingsModal.remove();
             overlay.remove();
         }
+
+ const StatEnabled = GM_getValue('bgBlurEnabled', true);
+statsContainer.style.display = StatEnabled ? 'flex' : 'none';
     });
 
     // Закрытие по клику вне окна
@@ -1647,6 +1727,7 @@ function updateBackgroundbutton(opacity = 0.9) {
     const savedImage = GM_getValue('bgImage', null);
     const savedOpacity = GM_getValue('bgOpacity', 0.4);
     const savedOpacitybut = GM_getValue('bgOpacitybut', 0.9);
+    const savedOpacityrazm = GM_getValue('bgOpacityrazm', 20);
 
 
     if (savedImage) {
@@ -1660,8 +1741,10 @@ function updateBackgroundbutton(opacity = 0.9) {
 
     // Применяем сохранённую прозрачность кнопок
     updateBackgroundbutton(savedOpacitybut);
-});
+    updateBackgroundrazm(savedOpacityrazm);
 
+});
+//statsContainer flex display
 
 
         openBarcodeWindowBtn.addEventListener('click', () => {
