@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      5.2
+// @version      5.3
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -513,8 +513,41 @@ brihgt.style.cssText = `
         buttonsContainer.className = 'buttons-container';
 
         const game = document.createElement('button');
-        game.className = 'action-button';
-        game.textContent = "Скоротать время :з";
+game.className = 'action-button';
+const imgUrl = 'https://yastatic.net/s3/urban-ads-gaming/stable/assets/market-rush-cover-BI0z_oa-.webp';
+const img = document.createElement('img');
+img.src = imgUrl;
+img.alt = 'Скоротать время :з';
+img.style.maxWidth = '100%';
+img.style.maxHeight = '24px';
+img.style.display = 'block';
+img.onerror = () => {
+    img.remove();
+    game.textContent = 'Доставка (игра)';
+};
+img.onload = () => {
+    game.textContent = '';
+    game.appendChild(img);
+};
+game.appendChild(img);
+           const game1 = document.createElement('button');
+game1.className = 'action-button';
+const imgUrl1 = 'https://yastatic.net/s3/urban-ads-gaming/stable/assets/mark3-logo-C-gqlw6v.webp';
+const img1 = document.createElement('img');
+img1.src = imgUrl1;
+img1.alt = 'Скоротать время :з';
+img1.style.maxWidth = '100%';
+img1.style.maxHeight = '24px';
+img1.style.display = 'block';
+img1.onerror = () => {
+    img1.remove();
+    game1.textContent = 'В ряд (игра)';
+};
+img1.onload = () => {
+    game1.textContent = '';
+    game1.appendChild(img1);
+};
+game1.appendChild(img1);
 
         const Priemyan = document.createElement('button');
         Priemyan.className = 'action-button';
@@ -622,19 +655,6 @@ autoFocusToggle.style.alignItems = 'center';
 autoFocusToggle.style.gap = '5px';
 autoFocusToggle.style.fontSize = '10px';
 
-const autoFocusCheckbox = document.createElement('input');
-autoFocusCheckbox.type = 'checkbox';
-
-autoFocusToggle.appendChild(autoFocusCheckbox);
-autoFocusToggle.appendChild(document.createTextNode("Автофокус на поле выдачи яндекс"));
-
-// Получаем значение при инициализации
-const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
-autoFocusCheckbox.checked = savedState;
-
-autoFocusCheckbox.addEventListener('change', () => {
-    GM_setValue('boxfokus', autoFocusCheckbox.checked);
-});
 
 
 
@@ -665,7 +685,7 @@ autoFocusCheckbox.addEventListener('change', () => {
         contentArea.className = 'content-area';
 
         // Собираем структуру
-
+        buttonsContainer.appendChild(game1);
         buttonsContainer.appendChild(game);
         buttonsContainer.appendChild(Priemyan);
         buttonsContainer.appendChild(docs);
@@ -1412,6 +1432,14 @@ const historyItem = {
 
 
         });
+        game1.addEventListener('click', function () {
+            const windowName = 'game2';
+            const url = `https://gaming.market.yandex.ru/?gameId=mark3&platform=desktop`;
+            const tab = window.open('', windowName);
+            return window.open(url, windowName);
+
+
+        });
       docs.addEventListener('click', function () {
     const text = input.value.trim();
 
@@ -1533,6 +1561,7 @@ function updateBackgroundbutton(opacity = 0.9) {
     openBarcodeWindowBtn.style.background = linear;
     Priemyan.style.background = linear;
     game.style.background = linear;
+    game1.style.background = linear;
     settingsz.style.background = linear;
 
     // Статистика
@@ -1557,6 +1586,7 @@ function updateBackgroundrazm(blur = 100) {
     applyBlur(openBarcodeWindowBtn);
     applyBlur(Priemyan);
     applyBlur(game);
+    applyBlur(game1);
     applyBlur(settingsz);
 
     // Статистика
@@ -1613,6 +1643,18 @@ fileInput.type = 'file';
 fileInput.accept = 'image/*';
 fileInput.style.display = 'none';
 
+const autoFocusCheckbox = document.createElement('input');
+autoFocusCheckbox.type = 'checkbox';
+// Получаем значение при инициализации
+const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
+autoFocusCheckbox.checked = savedState;
+           // Создаём label с текстом
+const label = document.createElement('label');
+label.appendChild(autoFocusCheckbox);
+label.append(' Автофокус'); // ← нужный текст
+
+// Добавляем в DOM
+document.body.appendChild(label);
 // Кастомная кнопка
 const fileBtn = document.createElement('button');
 fileBtn.type = 'button';
@@ -1671,6 +1713,8 @@ blurToggle.checked = GM_getValue('bgBlurEnabled', true);
 
 const blurToggleText = document.createElement('span');
 blurToggleText.textContent = 'Включить статистику';
+const autoFocusCheckboxText = document.createElement('span');
+autoFocusCheckboxText.textContent = 'Включить статистику';
 
 blurToggleLabel.appendChild(blurToggle);
 blurToggleLabel.appendChild(blurToggleText);
@@ -1682,6 +1726,7 @@ settingsModal.appendChild(blurToggleLabel);
     settingsModal.appendChild(opacityLabel);
     settingsModal.appendChild(opacityLabel1);
     settingsModal.appendChild(opacityLabel2);
+settingsModal.appendChild(label);
 
     // Кнопка применить
     const applyBtn = document.createElement('button');
@@ -1703,6 +1748,7 @@ settingsModal.appendChild(blurToggleLabel);
                 GM_setValue('bgOpacitybut', opacityInput1.value);
                 GM_setValue('bgOpacityrazm', opacityInput2.value);
                 GM_setValue('bgBlurEnabled', blurToggle.checked);
+                GM_setValue('boxfokus', autoFocusCheckbox.checked);
                 updateBackground(base64, opacityInput.value);
                 updateBackgroundbutton(opacityInput1.value)
                 updateBackgroundrazm(opacityInput2.value);
@@ -1715,6 +1761,7 @@ settingsModal.appendChild(blurToggleLabel);
             GM_setValue('bgOpacitybut', opacityInput1.value);
             GM_setValue('bgOpacityrazm', opacityInput2.value);
             GM_setValue('bgBlurEnabled', blurToggle.checked);
+             GM_setValue('boxfokus', autoFocusCheckbox.checked);
             const savedImage = GM_getValue('bgImage', null);
             if (savedImage) updateBackground(savedImage, opacityInput.value);
             updateBackgroundbutton(opacityInput1.value)
