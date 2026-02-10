@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      5.3
+// @version      5.3.1
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -22,30 +22,86 @@
     let currentURL = location.href;
 
 
-    fokus();
-    function fokus(){
-        const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
-        if(savedState){
-            if (location.pathname === `/tpl-outlet/${UID_YA}/issuing`) {
-                const selector = '[data-testid="client-issuing-search-suggest"]';
-                const focusInput = () => {
-                    const input = document.querySelector(selector);
-                    if (input && document.activeElement !== input) {
-                        input.focus();
-                    }
-                };
 
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'visible') {
-                        focusInput();
-                    }
-                });
+    const SELECTOR = '[data-testid="client-issuing-search-suggest"]';
+    const STORAGE_KEY_STATE = 'boxfokus';
+    const STORAGE_KEY_COM1 = 'com1';
+    const STORAGE_KEY_LAST = 'last_com1';// новое — запоминаем, что уже вставляли
 
-// фокус при обновлении / первом открытии
-                window.addEventListener('load', focusInput);
-            }
+    // ─── 1. Автофокус при возвращении на вкладку ────────────────────────────────
+    function tryFocusInput() {
+        const input = document.querySelector(SELECTOR);
+        if (input && document.activeElement !== input) {
+            input.focus();
         }
     }
+
+    if (GM_getValue(STORAGE_KEY_STATE, true)) {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                tryFocusInput();
+            }
+        });
+
+        window.addEventListener('load', tryFocusInput);
+    }
+
+    // ─── 2. Вставка номера заказа только один раз или при изменении com1 ────────
+    function tryFillOrderNumber() {
+
+        const input = document.querySelector(SELECTOR);
+        if (!input) return;
+
+        const currentCom1 = GM_getValue(STORAGE_KEY_COM1, null);
+        if (currentCom1 === null || currentCom1 === '') return;
+
+        const lastInserted = GM_getValue(STORAGE_KEY_LAST, null);
+
+        // Вставляем, только если значение изменилось или раньше ничего не вставляли
+        if (lastInserted !== currentCom1) {
+            input.focus();
+            input.select();
+
+            // Современный и надёжный способ вставить текст
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype, "value"
+            ).set;
+
+            nativeInputValueSetter.call(input, currentCom1);
+
+            // Имитируем события, которые обычно ждёт React
+            input.dispatchEvent(new Event('input',  { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+
+            // Эмуляция Enter (не всегда нужно, но оставим)
+            input.dispatchEvent(new KeyboardEvent('keydown', {
+                bubbles: true,
+                cancelable: true,
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13
+            }));
+
+            // Запоминаем, что именно вставили
+            GM_setValue(STORAGE_KEY_LAST, currentCom1);
+            console.log('[AutoFill] Вставлено значение:', currentCom1);
+        }
+    }
+
+
+    // Запуск после загрузки страницы + небольшая задержка
+    window.addEventListener('load', () => {
+        setTimeout(tryFillOrderNumber, 700);
+    });
+
+    // Дополнительно — при возвращении на вкладку пробуем ещё раз (на случай если поле перерендерилось)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            setTimeout(tryFillOrderNumber, 600);
+        }
+    });
+
+
 
     if (location.href.includes('https://www.123.ru/')) {
         GM_addStyle(`
@@ -367,6 +423,21 @@
 .yan-btn:hover {
     background: var(--bg-hover);
 }
+.chio-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 999px;
+
+    background: white;
+    border: 1px solid var(--border);
+    color: #007795;
+    cursor: pointer;
+
+    transition: background .15s;
+}
+.chio-btn:hover {
+    background: var(--bg-hover);
+}
 .gz-btn {
     padding: 4px 10px;
     font-size: 11px;
@@ -459,6 +530,7 @@
     border-left: 4px solid #2ecc71;
     transition: background 0.3s ease;
 }
+
 
 `);
 
@@ -640,6 +712,12 @@ statsContainer.style.display = StatEnabled ? 'flex' : 'none';
         dateFilter.style.width = '100px';
         dateFilter.style.maxWidth = '200px';
         dateFilter.style.minWidth = '120px';
+        dateFilter.style.border = '1px solid var(--border)';
+        dateFilter.style.borderRadius = '20px';
+        dateFilter.style.backgroundColor = 'var(--bg-secondary, white)';
+        dateFilter.style.color = 'var(--text-primary, #000)';
+        dateFilter.style.outline = 'none';
+        dateFilter.style.transition = 'all 0.12s ease';
         dateFilter.style.boxSizing = 'border-box';
         dateFilter.value = new Date().toISOString().split('T')[0];
 
@@ -690,6 +768,7 @@ autoFocusToggle.style.fontSize = '10px';
         buttonsContainer.appendChild(Priemyan);
         buttonsContainer.appendChild(docs);
         buttonsContainer.appendChild(openBarcodeWindowBtn);
+        buttonsContainer.appendChild(dateFilter);
         buttonsContainer.appendChild(settingsz);
         header.appendChild(title);
         header.appendChild(brihgt);
@@ -904,7 +983,8 @@ const now = Date.now();
         : ''
 }
                           ${/^\d{12}$/.test(command)
-  ? `<span class="history-time">QR НА ВЫДАЧУ, для приемки нужен его номер. Кнопка "ПРИЕМКА Яндекс (Водители/Продавцы)"</span>`
+  ? `<button class="chio-btn">?</button>`
+                    // `<span class="history-time">QR НА ВЫДАЧУ, для приемки нужен его номер. Кнопка "ПРИЕМКА Яндекс (Водители/Продавцы)"</span>`
   : ''
 }
                 </div>
@@ -985,6 +1065,11 @@ ${/^(LO-\d{9})-\d{5}$/.test(command)
                 });
             });
 
+            contentArea.querySelectorAll('.chio-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    alert('QR НА ВЫДАЧУ, для приемки нужен его номер. Кнопка "ПРИЕМКА Яндекс (Водители/Продавцы)')
+                });
+            });
             // ---------------- КОПИРОВАНИЕ ----------------
             contentArea.querySelectorAll('.copy-btn').forEach(button => {
                 button.addEventListener('click', function () {
@@ -1015,6 +1100,7 @@ ${/^(LO-\d{9})-\d{5}$/.test(command)
             contentArea.querySelectorAll('.yan-btn').forEach(button => {
                 button.addEventListener('click', function () {
                     const command = this.getAttribute('data-command');
+                    GM_setValue('com1', command);
                     copyToClipboard(command);
                     return openOrFocusWindow('yandex_pvz_deliver_tab',
                                              `https://hubs.market.yandex.ru/tpl-outlet/${UID_YA}/issuing`
@@ -1060,7 +1146,7 @@ ${/^(LO-\d{9})-\d{5}$/.test(command)
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Штрихкод ${command}</title>
+<title>ШК ${command}</title>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <style>
 html,body{
@@ -1219,6 +1305,7 @@ new QRCode(document.getElementById("qrcode"), {
         function openOrFocusWindow(windowName, url) {
             const tab = window.open('', windowName);
 
+
             if (tab && !tab.closed) {
                 tab.focus();
                 try {
@@ -1256,29 +1343,31 @@ contentArea.scrollTop = 0;
         return;
     }
 
-    // Служебные команды
-    if (text === 'lfnf') {
-        buttonsContainer.appendChild(dateFilter);
-        input.value = '';
-        return;
-    }
-
     if (text === 'del') {
         delbtn = !delbtn;
         updateHistoryDisplay();
         input.value = '';
         return;
     }
-
+  GM_setValue('com1', text);
     // ⚠️ Проверка на дубликат
 const existingItem = commandHistory.find(item => item.command === text);
 if (existingItem) {
-    // подсветка на 20 секунд
+    const when = new Date(existingItem.timestamp || existingItem.date || Date.now());
+    const formattedDate = when.toLocaleString('ru-RU', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
     existingItem.highlightUntil = Date.now() + 10_000;
 
-    showStatus('⚠️ Такая команда уже была!', '#fff', '#FF5555');
+    showStatus(
+        `⚠️ Такая команда уже была! (${formattedDate})`,
+        '#fff',
+        '#FF5555'
+    );
+
     input.value = '';
-    updateHistoryDisplay(); // обновляем, чтобы подсветка появилась
+    updateHistoryDisplay(); // чтобы подсветка применилась
     return;
 }
 
@@ -1455,68 +1544,196 @@ const historyItem = {
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Выбор действия</title>
-<style>
-    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    button { margin: 10px; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; }
-    .action1 { background-color: #4CAF50; color: white; border: none; }
-    .action2 { background-color: #4CAF50; color: white; border: none; }
-    .action3 { background-color: #4CAF50; color: white; border: none; }
-    .action4 { background-color: #4CAF50; color: white; border: none; }
-    .action5 { background-color: #4CAF50; color: white; border: none; }
-    .close { background-color: #f44336; color: white; border: none; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Выбор акта</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-dark: #1b5e20;
+      --danger: #c62828;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --text-secondary: #555;
+      --shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: grid;
+      place-items: center;
+    }
+
+    .container {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 32px;
+      max-width: 540px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      margin-bottom: 1.4rem;
+      color: var(--primary);
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .intro {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+      font-size: 1.05rem;
+    }
+
+    .intro ul {
+      padding-left: 1.4em;
+      margin: 1.2rem 0;
+    }
+
+    .intro li {
+      margin: 0.6rem 0;
+    }
+
+    .intro small {
+      color: #777;
+      font-size: 0.9rem;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: white;
+      background: var(--primary);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      box-shadow: 0 3px 10px rgba(46,125,50,0.2);
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(46,125,50,0.28);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn i {
+      font-size: 1.3rem;
+      opacity: 0.9;
+    }
+
+    .btn-close {
+      margin-top: 2rem;
+      background: var(--danger);
+      box-shadow: 0 3px 10px rgba(198,40,40,0.2);
+    }
+
+    .btn-close:hover {
+      background: #a51b1b;
+      box-shadow: 0 6px 18px rgba(198,40,40,0.28);
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 24px;
+      }
+      h1 {
+        font-size: 1.7rem;
+      }
+    }
+  </style>
 </head>
 <body>
-<h2>Бумажная форма</h2>
 
-<ul>
-  <li>Приём и отказ от посылок Авито</li>
-  <li>Выдача возврата Авито по паспорту</li>
-  <li>
-    Если посылка не числится в системе
-    <small>(например, из-за смены юридического лица)</small>
-  </li>
-  <li>Если ЭАПП завис или не работает</li>
-  <li>
-    Если возникла особая ситуация, которую нельзя зафиксировать электронным актом,
-    либо по согласованию со службой поддержки
-  </li>
-</ul>
+<div class="container">
+  <h1>Бумажная форма</h1>
 
-<button class="action1">Приёмка у курьера Маркета — Акт приёма-передачи №3</button>
-<button class="action2">Приёмка заказа у клиента Авито и Яндекс Доставки — Акт приёма-передачи</button>
-<button class="action3">Приёмка заказов у продавца Маркета — Акт приёма-передачи</button>
-<button class="action4">Расхождения по итогу размещения заказов — Акт об установленном расхождении (№4)</button>
-<button class="action5">
-Расхождения на выдаче клиенту — Акт об обнаружении повреждений/недостатков отправления (№5)</button>
-<button class="close">Закрыть</button>
+  <div class="intro">
+    <p>Когда применять бумажный акт:</p>
+    <ul>
+      <li>Приём и отказ от посылок Авито</li>
+      <li>Выдача возврата Авито по паспорту</li>
+      <li>Посылка не числится в системе <small>(смена юр.лица и подобные случаи)</small></li>
+      <li>ЭАПП завис / не работает / недоступен</li>
+      <li>Особая ситуация, которую нельзя зафиксировать в электронном акте<br>или по согласованию со службой поддержки</li>
+    </ul>
+  </div>
+
+  <div class="buttons">
+    <button class="btn" data-link="https://new-acc-space-1143.ispring.ru/app/preview/65a7b1c2-eaed-11ef-9f34-72081ce363cf">
+      <i class="fas fa-truck-loading"></i>
+      Приёмка у курьера Маркета — Акт приёма-передачи №3
+    </button>
+
+    <button class="btn" data-link="https://new-acc-space-1143.ispring.ru/app/preview/6e3a6334-eae3-11ef-8d5c-b25e5b0cd9c5">
+      <i class="fas fa-people-carry"></i>
+     Приёмка заказа у клиента Авито и Яндекс Доставки — Акт приёма-передачи
+    </button>
+
+    <button class="btn" data-link="https://new-acc-space-1143.ispring.ru/app/preview/6e714494-eae3-11ef-9fc3-72081ce363cf">
+      <i class="fas fa-warehouse"></i>
+      Приёмка заказов у продавца Маркета — Акт приёма-передачи
+    </button>
+
+    <button class="btn" data-link="https://new-acc-space-1143.ispring.ru/app/preview/7ceafbea-eada-11ef-8bdd-92c9dee5d041">
+      <i class="fas fa-exclamation-triangle"></i>
+     Расхождения по итогу размещения заказов — Акт об установленном расхождении (№4)
+    </button>
+
+    <button class="btn" data-link="https://new-acc-space-1143.ispring.ru/app/preview/7d2734f2-eada-11ef-ac5c-5682b99ceced">
+      <i class="fas fa-box-open"></i>
+      Расхождения на выдаче клиенту — Акт об обнаружении повреждений/недостатков отправления (№5)
+    </button>
+
+    <button class="btn btn-close" id="close">
+      <i class="fas fa-times"></i>
+      Закрыть
+    </button>
+  </div>
+</div>
+
 <script>
-    document.querySelector('.action1').onclick = function() {
-    window.open('https://new-acc-space-1143.ispring.ru/app/preview/65a7b1c2-eaed-11ef-9f34-72081ce363cf', '_blank');
-        window.close();
-    };
-    document.querySelector('.action2').onclick = function() {
-         window.open('https://new-acc-space-1143.ispring.ru/app/preview/6e3a6334-eae3-11ef-8d5c-b25e5b0cd9c5', '_blank');
-        window.close();
-    };
-    document.querySelector('.action3').onclick = function() {
-        window.open('https://new-acc-space-1143.ispring.ru/app/preview/6e714494-eae3-11ef-9fc3-72081ce363cf', '_blank');
-        window.close();
-    };
-    document.querySelector('.action4').onclick = function() {
-        window.open('https://new-acc-space-1143.ispring.ru/app/preview/7ceafbea-eada-11ef-8bdd-92c9dee5d041', '_blank');
-        window.close();
-    };
-    document.querySelector('.action5').onclick = function() {
-        window.open('https://new-acc-space-1143.ispring.ru/app/preview/7d2734f2-eada-11ef-ac5c-5682b99ceced', '_blank');
-        window.close();
-    };
-    document.querySelector('.close').onclick = function() {
-        window.close();
-    };
+  document.querySelectorAll('.btn[data-link]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      window.open(btn.dataset.link, '_blank', 'noopener,noreferrer');
+      window.close();
+    });
+  });
+
+  document.getElementById('close').addEventListener('click', () => {
+    window.close();
+  });
 </script>
+
 </body>
 </html>
     `);
@@ -1562,6 +1779,7 @@ function updateBackgroundbutton(opacity = 0.9) {
     Priemyan.style.background = linear;
     game.style.background = linear;
     game1.style.background = linear;
+    dateFilter.style.background = linear;
     settingsz.style.background = linear;
 
     // Статистика
@@ -1587,6 +1805,7 @@ function updateBackgroundrazm(blur = 100) {
     applyBlur(Priemyan);
     applyBlur(game);
     applyBlur(game1);
+    applyBlur(dateFilter);
     applyBlur(settingsz);
 
     // Статистика
@@ -1646,7 +1865,7 @@ fileInput.style.display = 'none';
 const autoFocusCheckbox = document.createElement('input');
 autoFocusCheckbox.type = 'checkbox';
 // Получаем значение при инициализации
-const savedState = GM_getValue('boxfokus', true); // true — значение по умолчанию
+const savedState = GM_getValue('boxfokus', false); // true — значение по умолчанию
 autoFocusCheckbox.checked = savedState;
            // Создаём label с текстом
 const label = document.createElement('label');
@@ -1809,52 +2028,186 @@ statsContainer.style.display = StatEnabled ? 'flex' : 'none';
 //statsContainer flex display
 
 
-        openBarcodeWindowBtn.addEventListener('click', () => {
-            const win = window.open('', 'barcode_generator',
-                                    `width=${screen.width},height=${screen.height},left=0,top=0,resizable=yes,scrollbars=yes`);
+      openBarcodeWindowBtn.addEventListener('click', () => {
+    const win = window.open('', 'barcode_generator',
+        `width=${screen.width},height=${screen.height},left=0,top=0,resizable=yes,scrollbars=yes`);
 
-            win.document.write(`
+    win.document.write(`
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Генератор ШК и маркировки</title>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<style>
-body { margin: 0; font-family: Arial, sans-serif; width: 100%; height: 100%; background: #ffffff; text-align: center; }
-.controls { padding: 10px; background: #fff; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-.controls input, .controls button, .controls select { padding: 8px; font-size: 14px; }
-#labelContainer { display: none; font-size: 48px; font-weight: bold; margin: 20px 0; }
-#labelIcons { font-size: 40px; display: block; }
-#barcode { margin: 20px 0; }
-@media print {
-  body { margin: 0; }
-  .controls { display: none; }
-  #barcode, #labelContainer { width: 100%; margin: 0; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор ШК + маркировки</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --gray-100: #f9fafb;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --red-warn: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+            color: var(--gray-800);
+            padding: 16px;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+
+        .controls {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input, select, button {
+            padding: 12px 16px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+            transition: all 0.15s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+        .secondary { background: var(--gray-200); color: var(--gray-800); }
+        .secondary:hover { background: #d1d5db; }
+        .warn { background: var(--red-warn); }
+        .warn:hover { background: #dc2626; }
+
+        .preview {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 24px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        #labelContainer {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-align: center;
+            line-height: 1.1;
+            max-width: 100%;
+        }
+
+        #labelIcons { font-size: 3.5rem; margin-bottom: 6px; }
+
+        #barcode { max-width: 100%; height: auto; margin: 10px 0; }
+
+        .empty-state { color: #9ca3af; font-size: 1.1rem; padding: 60px 20px; text-align: center; }
+
+        @media print {
+            @page { size: auto; margin: 0; }
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
+            .controls, header, .empty-state { display: none !important; }
+            .preview {
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                height: auto;
+            }
+            #content-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+            }
+            #labelContainer, #barcode {
+                max-width: 98% !important;
+                page-break-inside: avoid;
+            }
+            svg { max-width: 100% !important; height: auto !important; }
+        }
+
+        @media (max-width: 600px) { .controls { flex-direction: column; } }
+    </style>
 </head>
 <body>
 
-<div class="controls">
-  <input id="barcodeInput" placeholder="Введите код">
-  <button id="generateBtn">Сгенерировать ШК</button>
-  <select id="labelMode">
-    <option value="fragile">⚠ Хрупко</option>
-    <option value="glass">🍷 Стекло</option>
-    <option value="careful">⬆ Осторожно</option>
-  </select>
-  <button id="toggleLabelBtn">Показать / скрыть</button>
-  <button id="printLabelOnlyBtn">🖨 Только маркировка</button>
-  <button id="printBtn">Печать</button>
-</div>
+<div class="container">
+    <header>
+        <h1>Генератор ШК + маркировки под Xprinter</h1>
+    </header>
 
-<div id="labelContainer">
-  <div id="labelIcons"></div>
-  <div id="labelText"></div>
-</div>
+    <div class="controls">
+        <input id="barcodeInput" placeholder="Введите код (4601234567890)" style="flex: 1 1 260px; min-width: 220px;">
+        <button id="generateBtn">Сгенерировать ШК</button>
+        <select id="labelMode">
+            <option value="none">Без маркировки</option>
+            <option value="fragile">⚠ Хрупко</option>
+            <option value="glass">🍷 Стекло</option>
+            <option value="careful">⬆ Осторожно</option>
+            <option value="camera">🎥 Под камерами</option>
+        </select>
+        <select id="stickerSize">
+            <option value="40x30">40×30 мм (Wildberries малый)</option>
+            <option value="58x40">58×40 мм (универсальный)</option>
+            <option value="75x120" selected>75×120 мм (Озон, Я.Маркет)</option>
+            <option value="100x150">100×150 мм (СДЭК, крупный)</option>
+        </select>
+        <button id="toggleLabelBtn" class="secondary">Показать маркировку</button>
+        <button id="printLabelOnlyBtn" class="warn">🖨 Только маркировка</button>
+        <button id="printBtn">🖨 Печать</button>
+    </div>
 
-<svg id="barcode"></svg>
+    <div class="preview">
+        <div id="content-wrapper">
+            <div id="labelContainer" style="display:none;">
+                <div id="labelIcons"></div>
+                <div id="labelText"></div>
+            </div>
+            <svg id="barcode"></svg>
+        </div>
+        <div id="emptyState" class="empty-state">Введите код и нажмите «Сгенерировать ШК»</div>
+    </div>
+</div>
 
 <script>
 const input = document.getElementById('barcodeInput');
@@ -1863,55 +2216,106 @@ const labelContainer = document.getElementById('labelContainer');
 const labelIcons = document.getElementById('labelIcons');
 const labelText = document.getElementById('labelText');
 const labelMode = document.getElementById('labelMode');
+const stickerSize = document.getElementById('stickerSize');
+const emptyState = document.getElementById('emptyState');
 
 let labelVisible = false;
 let printOnlyLabel = false;
 
 const LABELS = {
-  fragile: { text: 'ХРУПКО', icons: '📦 ⚠ 📦' },
-  glass: { text: 'СТЕКЛО', icons: '🍷 ⚠ 🍷' },
-  careful: { text: 'ОСТОРОЖНО', icons: '⬆ ⬆ ⬆' }
+    none:    { text: '',             icons: '' },
+    fragile: { text: 'ХРУПКО',       icons: '📦 ⚠️ 📦' },
+    glass:   { text: 'СТЕКЛО',       icons: '🍷 ⚠️ 🍷' },
+    careful: { text: 'ОСТОРОЖНО',    icons: '⬆️ ⬆️ ⬆️' },
+    camera:  { text: 'ПОД КАМЕРАМИ', icons: '🎥 🎥 🎥' }
 };
 
 function updateLabel() {
-  const m = LABELS[labelMode.value];
-  labelText.textContent = m.text;
-  labelIcons.textContent = m.icons;
+    const mode = labelMode.value;
+    if (mode === 'none') {
+        labelContainer.style.display = 'none';
+        return;
+    }
+    const m = LABELS[mode];
+    labelText.textContent = m.text;
+    labelIcons.textContent = m.icons;
+    if (labelVisible) labelContainer.style.display = 'block';
 }
 
+labelMode.onchange = updateLabel;
+
+stickerSize.onchange = updateLabel; // для перерисовки размеров
+
 document.getElementById('generateBtn').onclick = () => {
-  if (!input.value.trim()) return alert('Введите код');
-  JsBarcode(barcodeSvg, input.value, { format: 'CODE128', displayValue: true, width: 2, height: 120, fontSize: 22 });
+    const val = input.value.trim();
+    if (!val) return alert('Введите код');
+
+    emptyState.style.display = 'none';
+
+    let size = stickerSize.value;
+    let w = 2.0, h = 80, fs = 20;
+
+    if (size === '40x30')    { w = 1.4; h = 50; fs = 16; }
+    if (size === '58x40')    { w = 1.7; h = 65; fs = 18; }
+    if (size === '75x120')   { w = 2.2; h = 100; fs = 24; }
+    if (size === '100x150')  { w = 2.8; h = 130; fs = 28; }
+
+    JsBarcode(barcodeSvg, val, {
+        format: 'CODE128',
+        displayValue: true,
+        width: w,
+        height: h,
+        fontSize: fs,
+        margin: 8,
+        textAlign: 'center',
+        textPosition: 'bottom',
+        textMargin: 4
+    });
+
+    // Маркировка тоже адаптируется
+    const labelScale = size === '40x30' ? 0.7 : size === '58x40' ? 0.85 : size === '75x120' ? 1.0 : 1.2;
+    labelContainer.style.fontSize = (2.4 * labelScale) + 'rem';
+    labelIcons.style.fontSize = (3.5 * labelScale) + 'rem';
 };
 
 document.getElementById('toggleLabelBtn').onclick = () => {
-  labelVisible = !labelVisible;
-  labelContainer.style.display = labelVisible ? 'block' : 'none';
-  if (labelVisible) updateLabel();
+    labelVisible = !labelVisible;
+    labelContainer.style.display = labelVisible && labelMode.value !== 'none' ? 'block' : 'none';
+    if (labelVisible) updateLabel();
 };
 
-labelMode.onchange = () => { if (labelVisible) updateLabel(); };
+function preparePrint() {
+    emptyState.style.display = 'none';
+    if (printOnlyLabel) {
+        barcodeSvg.style.display = 'none';
+        labelContainer.style.display = 'block';
+    } else {
+        barcodeSvg.style.display = 'block';
+        labelContainer.style.display = labelVisible ? 'block' : 'none';
+    }
+}
 
 document.getElementById('printLabelOnlyBtn').onclick = () => {
-  printOnlyLabel = true;
-  labelVisible = true;
-  labelContainer.style.display = 'block';
-  updateLabel();
-  barcodeSvg.style.display = 'none';
+    if (labelMode.value === 'none') return alert('Выберите тип маркировки');
+    printOnlyLabel = true;
+    labelVisible = true;
+    updateLabel();
+    preparePrint();
+    setTimeout(() => window.print(), 400);
 };
 
 document.getElementById('printBtn').onclick = () => {
-  if (!labelVisible && !barcodeSvg.hasChildNodes()) return alert('Нечего печатать');
-  window.print();
-  if (printOnlyLabel) { barcodeSvg.style.display = 'block'; printOnlyLabel = false; }
+    if (!barcodeSvg.innerHTML && !labelVisible) return alert('Сгенерируйте ШК или включите маркировку');
+    printOnlyLabel = false;
+    preparePrint();
+    setTimeout(() => window.print(), 400);
 };
 </script>
-
 </body>
 </html>
     `);
-            win.document.close();
-        });
+    win.document.close();
+});
 
 
     } else {
