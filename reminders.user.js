@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      5.3.1
+// @version      5.3.2
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -25,11 +25,13 @@
 
     const SELECTOR = '[data-testid="client-issuing-search-suggest"]';
     const STORAGE_KEY_STATE = 'boxfokus';
+    const STORAGE_KEY_PUT = 'boxput';
     const STORAGE_KEY_COM1 = 'com1';
     const STORAGE_KEY_LAST = 'last_com1';// новое — запоминаем, что уже вставляли
 
     // ─── 1. Автофокус при возвращении на вкладку ────────────────────────────────
     function tryFocusInput() {
+
         const input = document.querySelector(SELECTOR);
         if (input && document.activeElement !== input) {
             input.focus();
@@ -91,13 +93,17 @@
 
     // Запуск после загрузки страницы + небольшая задержка
     window.addEventListener('load', () => {
+        if(GM_getValue(STORAGE_KEY_PUT, false)){
         setTimeout(tryFillOrderNumber, 700);
+        }
     });
 
     // Дополнительно — при возвращении на вкладку пробуем ещё раз (на случай если поле перерендерилось)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
+        if(GM_getValue(STORAGE_KEY_PUT, false)){
             setTimeout(tryFillOrderNumber, 600);
+        }
         }
     });
 
@@ -1872,6 +1878,17 @@ const label = document.createElement('label');
 label.appendChild(autoFocusCheckbox);
 label.append(' Автофокус'); // ← нужный текст
 
+           const putCheckbox = document.createElement('input');
+putCheckbox.type = 'checkbox';
+// Получаем значение при инициализации
+const savedStateput = GM_getValue('boxput', false); // true — значение по умолчанию
+putCheckbox.checked = savedStateput;
+           // Создаём label с текстом
+const labelput = document.createElement('label');
+labelput.appendChild(putCheckbox);
+labelput.append(' Вставлять текст автоматически на выдаче яндекс'); // ← нужный текст
+
+
 // Добавляем в DOM
 document.body.appendChild(label);
 // Кастомная кнопка
@@ -1946,6 +1963,7 @@ settingsModal.appendChild(blurToggleLabel);
     settingsModal.appendChild(opacityLabel1);
     settingsModal.appendChild(opacityLabel2);
 settingsModal.appendChild(label);
+           settingsModal.appendChild(labelput);
 
     // Кнопка применить
     const applyBtn = document.createElement('button');
@@ -1968,6 +1986,7 @@ settingsModal.appendChild(label);
                 GM_setValue('bgOpacityrazm', opacityInput2.value);
                 GM_setValue('bgBlurEnabled', blurToggle.checked);
                 GM_setValue('boxfokus', autoFocusCheckbox.checked);
+                GM_setValue('boxput', putCheckbox.checked);
                 updateBackground(base64, opacityInput.value);
                 updateBackgroundbutton(opacityInput1.value)
                 updateBackgroundrazm(opacityInput2.value);
@@ -1981,6 +2000,7 @@ settingsModal.appendChild(label);
             GM_setValue('bgOpacityrazm', opacityInput2.value);
             GM_setValue('bgBlurEnabled', blurToggle.checked);
              GM_setValue('boxfokus', autoFocusCheckbox.checked);
+             GM_setValue('boxput', putCheckbox.checked);
             const savedImage = GM_getValue('bgImage', null);
             if (savedImage) updateBackground(savedImage, opacityInput.value);
             updateBackgroundbutton(opacityInput1.value)
