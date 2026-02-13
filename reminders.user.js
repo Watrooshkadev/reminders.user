@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Reminders (Local Config, SPA)
 // @namespace    reminders_local
-// @version      5.3.2
+// @version      5.3.3
 // @description  Напоминания для сайтов + большое центральное окно
 // @author       Watrooshka
 // @updateURL    https://raw.githubusercontent.com/Watrooshkadev/reminders.user/refs/heads/main/reminders.user.js
@@ -796,14 +796,14 @@ autoFocusToggle.style.fontSize = '10px';
                                         );
         }
         // Функция для определения типа команды
-        function getCommandType(command) {
-            if (/^\d{10}$/.test(command)) {
-                return command.startsWith('50')
-                    ? 'АВИТОПРИЕМКА'
-                : 'АВИТОВЫДАЧА';
-            }
-            return 'ЯНДЕКС';
-        }
+       function getCommandType(command) {
+    if (/^\d{10}$/.test(command)) {
+        return command.startsWith('50') || command.startsWith('51')
+            ? 'АВИТОПРИЕМКА'
+            : 'АВИТОВЫДАЧА';
+    }
+    return 'ЯНДЕКС';
+}
         function calculateStatsByDate() {
             const stats = {
                 avito: 0,// АВИТОВЫДАЧА
